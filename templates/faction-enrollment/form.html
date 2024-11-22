@@ -1,0 +1,112 @@
+<!-- enrollment/templates/faction-enrollment/form.html-->
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="container mt-5 card">
+<h2>Enroll {{ faction.name | title }}.</h2>
+
+<form method="POST" class="form-horizontal">
+    {% csrf_token %}
+    <fieldset>
+    <!-- Facility Enrollment -->
+    <div class="form-group">
+        <label for="{{ form.facility_enrollment.id_for_label }}" class="control-label">
+        {{ form.facility_enrollment.label }}
+        </label>
+        <div class="controls">
+        {{ form.facility_enrollment }}
+        </div>
+    </div>
+
+    <!-- Week -->
+    <div class="form-group">
+        <label for="{{ form.week.id_for_label }}" class="control-label">
+        {{ form.week.label }}
+        </label>
+        <div class="controls">
+        {{ form.week }}
+        </div>
+    </div>
+
+    <!-- Quarter -->
+    <div class="form-group">
+        <label for="{{ form.quarter.id_for_label }}" class="control-label">
+        {{ form.quarter.label }}
+        </label>
+        <div class="controls">
+        {{ form.quarter }}
+        </div>
+    </div>
+
+    <!-- Start Date -->
+    <div class="form-group">
+        <label for="{{ form.start_date.id_for_label }}" class="control-label">
+        {{ form.start_date.label }}
+        </label>
+        <div class="controls">
+        {{ form.start_date }}
+        </div>
+    </div>
+
+    <!-- End Date -->
+    <div class="form-group">
+        <label for="{{ form.end_date.id_for_label }}" class="control-label">
+        {{ form.end_date.label }}
+        </label>
+        <div class="controls">
+        {{ form.end_date }}
+        </div>
+    </div>
+
+    </fieldset>
+
+    <div class="form-group">
+    <button type="submit" class="btn btn-primary">Submit Enrollment</button>
+    <a href="{% url 'factions:show' faction.slug %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+</section>
+
+<script>
+// Load weeks based on selected facility enrollment
+$("#id_facility_enrollment").change(function() {
+    var facilityEnrollmentId = $(this).val();
+    $.ajax({
+    url: "{% url 'ajax_load_weeks' %}",
+    data: {
+        'facility_enrollment': facilityEnrollmentId
+    },
+    success: function(data) {
+        $("#id_week").html('<option value="">Select Week</option>');
+        data.forEach(function(week) {
+        $("#id_week").append(
+            `<option value="${week.id}">${week.name}</option>`
+        );
+        });
+    }
+    });
+});
+
+// Load quarters based on selected facility enrollment and week
+$("#id_week").change(function() {
+    var facilityEnrollmentId = $("#id_facility_enrollment").val();
+    var weekId = $(this).val();
+
+    $.ajax({
+        url: "{% url 'ajax_load_quarters' %}",
+        data: {
+        'facility_enrollment': facilityEnrollmentId,
+        'week': weekId
+        },
+        success: function(data) {
+        $("#id_quarter").html('<option value="">Select Quarters</option>');
+        data.forEach(function(quarter) {
+            $("#id_quarter").append(
+            `<option value="${quarter.id}">${quarter.name}</option>`
+            );
+        });
+        }
+    });
+});
+</script>
+{% endblock %}

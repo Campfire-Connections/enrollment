@@ -1,0 +1,37 @@
+<!-- enrollment/templates/enrollment/my_schedule.html -->
+{% extends 'base/layout.html' %}
+
+{% block content %}
+  <h1>My Schedule</h1>
+
+  {% if active_enrollment.attendee_enrollment %}
+    <h2>Attendee Enrollment</h2>
+    <p>Attendee: {{ active_enrollment.attendee_enrollment.attendee }}</p>
+    <p>Faction: {{ active_enrollment.attendee_enrollment.faction_enrollment.faction }}</p>
+    <p>Quarters: {{ active_enrollment.attendee_enrollment.quarters }}</p>
+    <!-- Add more details as needed -->
+  {% endif %}
+
+  {% if active_enrollment.leader_enrollment %}
+    <h2>Leader Enrollment</h2>
+    <p>Leader: {{ active_enrollment.leader_enrollment.leader }}</p>
+    <p>Faction: {{ active_enrollment.leader_enrollment.faction_enrollment.faction }}</p>
+    <p>Quarters: {{ active_enrollment.leader_enrollment.quarters }}</p>
+    <!-- Add more details as needed -->
+  {% endif %}
+
+  {% if active_enrollment.faculty_enrollment %}
+    <h2>Faculty Enrollment</h2>
+    <p>Faculty: {{ active_enrollment.faculty_enrollment.faculty }}</p>
+    <p>Facility: {{ active_enrollment.faculty_enrollment.facility_enrollment.facility }}</p>
+    <p>Quarters: {{ active_enrollment.faculty_enrollment.quarters }}</p>
+    <!-- Add more details as needed -->
+  {% endif %}
+
+  {% if active_enrollment.facility_enrollment %}
+    <h2>Facility Enrollment</h2>
+    <p>Facility: {{ active_enrollment.facility_enrollment.facility }}</p>
+    <p>Organization: {{ active_enrollment.facility_enrollment.organization_enrollment.organization }}</p>
+    <!-- Add more details as needed -->
+  {% endif %}
+{% endblock %}
