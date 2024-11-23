@@ -15,7 +15,7 @@ app_name = "periods"
 urlpatterns = [
     # Period URLs
     path("", PeriodIndexView.as_view(), name="index"),
-    path("create/", PeriodCreateView.as_view(), name="new"),
+    path("new/", PeriodCreateView.as_view(), name="new"),
     path("<int:pk>/", PeriodShowView.as_view(), name="show"),
     path("<slug:period_slug>/", PeriodShowView.as_view(), name="show"),
     path("<int:pk>/update/", PeriodUpdateView.as_view(), name="update"),

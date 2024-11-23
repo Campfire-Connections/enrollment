@@ -23,7 +23,7 @@ urlpatterns = [
     path("<slug:week_slug>/update/", WeekUpdateView.as_view(), name="update"),
     path("<int:pk>/delete/", WeekDeleteView.as_view(), name="delete"),
     path("<slug:week_slug>/delete/", WeekDeleteView.as_view(), name="delete"),
-    path("manage/", WeekManageView.as_view(), name="manage"),
+    path("<slug:week_slug>/manage/", WeekManageView.as_view(), name="manage"),
     path(
         "<slug:week_slug>/periods/",
         include("enrollment.urls.period", namespace="periods"),

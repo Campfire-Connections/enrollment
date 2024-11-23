@@ -50,6 +50,7 @@ class WeekTable(BaseTable):
             }
         },
         "manage": {
+            "name": "facilities:enrollments:weeks:manage",
             "kwargs": {
                 "facility_slug": "facility_enrollment__facility__slug",
                 "facility_enrollment_slug": "facility_enrollment__slug",
@@ -59,11 +60,11 @@ class WeekTable(BaseTable):
     }
 
 
-class PeriodTable(tables.Table):
+class PeriodTable(BaseTable):
     """Table definition for the Period model."""
 
     week_name = tables.Column(
-        accessor="get_week_name",
+        accessor="week.name",
         verbose_name="Week Name",
     )
     start = tables.DateTimeColumn(format="h:i a", verbose_name="Start Time")
