@@ -5,8 +5,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.core.exceptions import ValidationError
 
-from pages.mixins import models as mixins
-# from pages.mixins import settings as stgs
+from core.mixins import models as mixins
+# from core.mixins import settings as stgs
 
 User = get_user_model()
 

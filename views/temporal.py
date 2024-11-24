@@ -12,7 +12,7 @@ from ..models.faction import FactionEnrollment
 from ..models.facility import FacilityEnrollment
 from ..tables.temporal import PeriodTable
 from ..forms.period import PeriodForm
-from pages.mixins.forms import (
+from core.mixins.forms import (
     FormValidMixin, SuccessMessageMixin, ErrorMessageMixin,
     ConditionalRedirectMixin, PrefillFormMixin, ValidationErrorMixin
 )

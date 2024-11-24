@@ -2,7 +2,7 @@
 
 import django_tables2 as tables
 
-from pages.tables.base import BaseTable
+from core.tables.base import BaseTable
 from ..models.temporal import Week, Period
 
 

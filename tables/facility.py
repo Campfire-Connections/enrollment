@@ -1,7 +1,7 @@
 # enrollment/tables/facility.py
 import django_tables2 as tables
-from pages.mixins.tables import OrganizationLabelMixin
-from pages.tables.base import BaseTable
+from core.mixins.tables import OrganizationLabelMixin
+from core.tables.base import BaseTable
 from ..models.facility import FacilityEnrollment
 from course.models.facility_class import FacilityClass
 
