@@ -1,33 +1,31 @@
 # enrollment/forms/period.py
 
-from django import forms
-from ..models.temporal import Period, Week
+from core.forms.base import BaseForm
 
-class PeriodForm(forms.ModelForm):
+from ..models.temporal import Week, Period
+
+class PeriodForm(BaseForm):
     class Meta:
         model = Period
-        fields = ['name', 'description', 'week', 'start', 'end']
+        fields = ['name', 'week', 'start', 'end']
 
     def __init__(self, *args, **kwargs):
-        week = kwargs.pop('week', None)  # Accept the 'week' from view kwargs
         super().__init__(*args, **kwargs)
 
-        # Pre-fill the week dropdown if provided
-        if week:
-            self.fields['week'].queryset = Week.objects.filter(pk=week.pk)
-            self.fields['week'].initial = week.pk
-            self.fields['week'].widget.attrs['readonly'] = True
-            self.fields['week'].widget = forms.HiddenInput()
-        else:
-            self.fields['week'].queryset = Week.objects.all()
+        # Dynamic filtering of weeks
+        self.fields['week'].queryset = Week.objects.filter(
+            facility_enrollment__facility=self.user.facultyprofile.facility
+        ) if self.user else Week.objects.none()
+
+        # Add classes to fields
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
 
     def clean(self):
         cleaned_data = super().clean()
-
-        # Ensure start is before end
         start = cleaned_data.get('start')
         end = cleaned_data.get('end')
-        if start and end and start >= end:
-            raise forms.ValidationError("Start time must be before end time.")
-        
+
+        if start and end and start > end:
+            self.add_error('end', 'End date must be after the start date.')
         return cleaned_data

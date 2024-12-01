@@ -1,10 +1,10 @@
 # enrollment/forms/facility.py
 
-from django import forms
+from core.forms.base import BaseForm
 
-from ..models.facility import FacilityClass
+from ..models.facility import FacilityClassEnrollment
 
-class FacilityClassForm(forms.ModelForm):
+class FacilityClassEnrollmentForm(BaseForm):
     class Meta:
-        model = FacilityClass
+        model = FacilityClassEnrollment
         fields = ['name', 'description', 'organization_course', 'facility_enrollment']

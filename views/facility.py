@@ -1,232 +1,268 @@
 # enrollment/views/facility.py
 
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-)
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView
-from django_tables2 import MultiTableMixin, SingleTableView
-from django_tables2.config import RequestConfig
+
+from core.views.base import (
+    BaseManageView,
+    BaseIndexByFilterTableView,
+    BaseCreateView,
+    BaseDeleteView,
+    BaseDetailView,
+    BaseTableListView,
+    BaseUpdateView,
+)
+from facility.models.facility import Facility
+
 from ..models.facility import (
     FacilityEnrollment,
     FacilityClassEnrollment,
     FacultyEnrollment,
     FacultyClassEnrollment,
 )
+from ..forms.facility import FacilityEnrollmentForm, FacilityClassEnrollmentForm, 
+from ..forms.faculty_class import FacultyClassEnrollmentForm
 from ..models.temporal import Week
-from ..tables.temporal import WeekTable, PeriodTable
-from facility.models.facility import Facility
+from ..tables.temporal import WeekTable
+from ..tables.facility import FacilityEnrollmentTable, FacilityClassEnrollmentTable, FacultyEnrollmentTable, FacultyClassEnrollmentTable
 
-class ManageView(
-    LoginRequiredMixin, UserPassesTestMixin, MultiTableMixin, TemplateView
-):
+class FacilityEnrollmentManageView(BaseManageView):
     template_name = "facility/manage.html"
-    enrollment = None
-    facility = None
-    def get_tables(self):
+
+    def get_tables_config(self):
         enrollment = self.get_enrollment()
+        return {
+            "weeks": {
+                "class": WeekTable,
+                "queryset": Week.objects.filter(facility_enrollment=enrollment),
+                "paginate_by": 7,
+            },
+        }
 
-        # Construct querystrings
-        weeks_qs = Week.objects.filter(facility_enrollment=enrollment)
-
-        # Build tables with querystrings
-        week_table = WeekTable(weeks_qs)
-
-        # Configure tables with pagination and sorting
-        RequestConfig(self.request, paginate={"per_page": 8}).configure(
-            week_table
-        )
-
-        return [
-            week_table,
-        ]
-
-    def get_context_data(self, **kwargs):
+    def test_func(self):
         """
-        Constructs and returns the context data for rendering a template, including various tables 
-        and related entities for a specific facility. This function enhances the context with 
-        additional information and other related data.
-
-        Args:
-            self: The instance of the class.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            dict: A dictionary containing the context data for the template, including tables with 
-                names and various related entities.
+        Check if the user is a faculty member with admin privileges.
         """
+        return self.request.user.user_type == "FACULTY" and self.request.user.is_admin
 
-        context = super().get_context_data(**kwargs)
+    def get_create_url(self, table):
         facility = self.get_facility()
         enrollment = self.get_enrollment()
-
-        tables_with_names = [
-            {
-                "table": table,
-                "name": table.Meta.model._meta.verbose_name_plural,
-                "create_url": table.get_url(
-                    "add", context={"facility_slug": facility.slug, "facility_enrollment_slug": enrollment.slug}
-                ),
-                "icon": getattr(table, "add_icon", None),
-            }
-            for table in self.get_tables()
-        ]
-        context.update(
-            {
-                "tables_with_names": tables_with_names,
-                "facility": facility,
-                "enrollment": enrollment,
-            }
+        return table.get_url(
+            "add",
+            context={
+                "facility_slug": facility.slug,
+                "facility_enrollment_slug": enrollment.slug,
+            },
         )
-
-        return context
 
     def get_facility(self):
         if self.facility is None:
-            facility_slug = self.kwargs.get('facility_slug')
+            facility_slug = self.kwargs.get("facility_slug")
             self.facility = get_object_or_404(Facility, slug=facility_slug)
         return self.facility
 
     def get_enrollment(self):
         if self.enrollment is None:
-            enrollment_slug = self.kwargs.get('facility_enrollment_slug')
-            self.enrollment = get_object_or_404(FacilityEnrollment, slug=enrollment_slug)
+            enrollment_slug = self.kwargs.get("facility_enrollment_slug")
+            self.enrollment = get_object_or_404(
+                FacilityEnrollment, slug=enrollment_slug
+            )
         return self.enrollment
 
-    def test_func(self):
-        # Check if the user is a faculty member with admin privileges
-        return self.request.user.user_type == "FACULTY" and self.request.user.is_admin
 
-
-class FacilityEnrollmentIndexView(ListView):
+class FacilityEnrollmentIndexView(BaseTableListView):
     model = FacilityEnrollment
     template_name = "facility-enrollment/index.html"
-    context_object_name = "facility_enrollments"
+    context_object_name = "facility enrollments"
+    table_class = FacilityEnrollmentTable
 
 
-class FacilityEnrollmentShowView(DetailView):
+class FacilityEnrollmentShowView(BaseDetailView):
     model = FacilityEnrollment
     template_name = "facility-enrollment/show.html"
-    context_object_name = "facility_enrollment"
+    context_object_name = "facility enrollment"
+    slug_field = "slug"
+    slug_url_kwarg = "facility_enrollment_slug"
 
+    def get_tables_config(self):
+        enrollment = self.get_object()
+        return {
+            "weeks_table": {
+                "class": WeekTable,
+                "queryset": Week.objects.filter(facility_enrollment=enrollment),
+            },
+        }
 
-class FacilityEnrollmentCreateView(CreateView):
+class FacilityEnrollmentCreateView(BaseCreateView):
     model = FacilityEnrollment
-    fields = "__all__"
+    form_class = FacilityEnrollmentForm
     template_name = "facility-enrollment/form.html"
-    success_url = reverse_lazy("facility:facility_enrollment_index")
+    success_url_pattern = "facilities:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+    }
 
 
-class FacilityEnrollmentUpdateView(UpdateView):
+class FacilityEnrollmentUpdateView(BaseUpdateView):
     model = FacilityEnrollment
-    fields = "__all__"
+    form_class = FacilityEnrollmentForm
     template_name = "facility-enrollment/form.html"
-    success_url = reverse_lazy("facility:facility_enrollment_index")
+    success_url_pattern = "facilities:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+    }
 
 
-class FacilityEnrollmentDeleteView(DeleteView):
+class FacilityEnrollmentDeleteView(BaseDeleteView):
     model = FacilityEnrollment
     template_name = "facility-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("facility:facility_enrollment_index")
+    success_url_pattern = "facilities:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+    }
 
 
-class FacilityClassEnrollmentIndexView(ListView):
+class FacilityClassEnrollmentIndexView(BaseTableListView):
     model = FacilityClassEnrollment
     template_name = "facility-class-enrollment/index.html"
-    context_object_name = "facility_class_enrollments"
+    context_object_name = "facility class enrollments"
+    table_class = FacilityClassEnrollmentTable
 
 
-class FacilityClassEnrollmentShowView(DetailView):
+class FacilityClassEnrollmentShowView(BaseDetailView):
     model = FacilityClassEnrollment
     template_name = "facility-class-enrollment/show.html"
-    context_object_name = "facility_class_enrollment"
+    context_object_name = "facility class enrollment"
+    slug_field = "slug"
+    slug_url_kwarg = "facility_class_enrollment_slug"
 
 
-class FacilityClassEnrollmentCreateView(CreateView):
+class FacilityClassEnrollmentCreateView(BaseCreateView):
     model = FacilityClassEnrollment
-    fields = "__all__"
+    form_class = FacilityClassEnrollmentForm
     template_name = "facility-class-enrollment/form.html"
-    success_url = reverse_lazy("facility:facility_class_enrollment_index")
+    success_url_pattern = "facilities:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "facility_enrollment_slug": self.kwargs.get('facility_enrollment_slug'),
+    }
 
 
-class FacilityClassEnrollmentUpdateView(UpdateView):
+class FacilityClassEnrollmentUpdateView(BaseUpdateView):
     model = FacilityClassEnrollment
-    fields = "__all__"
+    form_class = FacilityClassEnrollmentForm
     template_name = "facility-class-enrollment/form.html"
-    success_url = reverse_lazy("facility:facility_class_enrollment_index")
+    success_url_pattern = "facilities:enrollments:classes:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "facility_enrollment_slug": self.kwargs.get('facility_enrollment_slug'),
+    }
 
-
-class FacilityClassEnrollmentDeleteView(DeleteView):
+class FacilityClassEnrollmentDeleteView(BaseDeleteView):
     model = FacilityClassEnrollment
     template_name = "facility-class-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("facility:facility_class_enrollment_index")
+    success_url_pattern = "facilities:enrollments:classes:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "facility_enrollment_slug": self.kwargs.get('facility_enrollment_slug'),
+    }
 
+# Faculty Enrollment
 
-class FacultyEnrollmentIndexView(ListView):
+class FacultyEnrollmentIndexView(BaseTableListView):
     model = FacultyEnrollment
     template_name = "faculty-enrollment/index.html"
-    context_object_name = "faculty_enrollments"
+    context_object_name = "faculty enrollments"
+    table_class = FacultyEnrollmentTable
 
 
-class FacultyEnrollmentShowView(DetailView):
+class FacultyEnrollmentShowView(BaseDetailView):
     model = FacultyEnrollment
     template_name = "faculty-enrollment/show.html"
-    context_object_name = "faculty_enrollment"
+    context_object_name = "faculty enrollment"
+    slug_field = "slug"
+    slug_url_kwarg = "faculty_enrollment_slug"
 
 
-class FacultyEnrollmentCreateView(CreateView):
+class FacultyEnrollmentCreateView(BaseCreateView):
     model = FacultyEnrollment
-    fields = "__all__"
+    form_class = FacultyEnrollmentForm
     template_name = "faculty-enrollment/form.html"
-    success_url = reverse_lazy("facility:faculty_enrollment_index")
+        success_url_pattern = "facilities:faculty:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+    }
 
 
-class FacultyEnrollmentUpdateView(UpdateView):
+class FacultyEnrollmentUpdateView(BaseUpdateView):
     model = FacultyEnrollment
-    fields = "__all__"
+    form_class = FacultyEnrollmentForm
     template_name = "faculty-enrollment/form.html"
-    success_url = reverse_lazy("facility:faculty_enrollment_index")
+    success_url_pattern = "facilities:faculty:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+    }
 
-
-class FacultyEnrollmentDeleteView(DeleteView):
+class FacultyEnrollmentDeleteView(BaseDeleteView):
     model = FacultyEnrollment
     template_name = "faculty-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("facility:faculty_enrollment_index")
+    success_url_pattern = "facilities:faculty:enrollments:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+    }
 
+# Faculty Class Enrollment
 
-class FacultyClassEnrollmentIndexView(ListView):
+class FacultyClassEnrollmentIndexView(BaseTableListView):
     model = FacultyClassEnrollment
     template_name = "faculty-class-enrollment/index.html"
-    context_object_name = "faculty_class_enrollments"
+    context_object_name = "faculty class enrollments"
+    table_class = FacultyClassEnrollmentTable
 
 
-class FacultyClassEnrollmentShowView(DetailView):
+class FacultyClassEnrollmentShowView(BaseDetailView):
     model = FacultyClassEnrollment
     template_name = "faculty-class-enrollment/show.html"
-    context_object_name = "faculty_class_enrollment"
+    context_object_name = "faculty class enrollment"
+    slug_field = "slug"
+    slug_url_kwarg = "faculty_class_enrollment_slug"
 
 
-class FacultyClassEnrollmentCreateView(CreateView):
+class FacultyClassEnrollmentCreateView(BaseCreateView):
     model = FacultyClassEnrollment
-    fields = "__all__"
+    form_class = FacultyClassEnrollmentForm
     template_name = "faculty-class-enrollment/form.html"
-    success_url = reverse_lazy("facility:faculty_class_enrollment_index")
+    success_url_pattern = "facilities:faculty:enrollments:classes:show"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+        "faculty_enrollment_slug": self.kwargs.get('faculty_enrollment_slug'),
+        "faculty_class_enrollment_slug": self.get_object(),
+    }
 
 
-class FacultyClassEnrollmentUpdateView(UpdateView):
+class FacultyClassEnrollmentUpdateView(BaseUpdateView):
     model = FacultyClassEnrollment
-    fields = "__all__"
+    form_class = FacultyClassEnrollmentForm
     template_name = "faculty-class-enrollment/form.html"
-    success_url = reverse_lazy("facility:faculty_class_enrollment_index")
+    success_url_pattern = "facilities:faculty:enrollments:classes:show"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+        "faculty_enrollment_slug": self.kwargs.get('faculty_enrollment_slug'),
+        "faculty_class_enrollment_slug": self.get_object(),
+    }
 
-
-class FacultyClassEnrollmentDeleteView(DeleteView):
+class FacultyClassEnrollmentDeleteView(BaseDeleteView):
     model = FacultyClassEnrollment
     template_name = "faculty-class-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("facility:faculty_class_enrollment_index")
+    success_url_pattern = "facilities:faculty:enrollments:classes:index"
+    success_url_params = {
+        "facility_slug": self.kwargs.get('facility_slug'),
+        "faculty_slug": self.kwargs.get('faculty_slug'),
+        "faculty_enrollment_slug": self.kwargs.get('faculty_enrollment_slug'),
+    }
