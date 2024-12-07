@@ -5,11 +5,9 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from core.mixins import models as mixins
-# from core.mixins import settings as stgs
 
 
 class AbstractTemporalHierarchy(
-    mixins.DateRangeMixin,
     mixins.NameDescriptionMixin,
     mixins.TimestampMixin,
     mixins.SoftDeleteMixin,
@@ -18,9 +16,10 @@ class AbstractTemporalHierarchy(
     mixins.ActiveMixin,
     models.Model,
 ):
-    """Abstract Temporal Hierarchy Model.
+    """
+    Abstract Temporal Hierarchy Model.
 
-    This abstract model represents a temporal entity with a date range, such as a week or period.
+    This abstract model provides a base for entities with time-related attributes.
     """
 
     class Meta:
@@ -32,10 +31,10 @@ class AbstractTemporalHierarchy(
         verbose_name_plural = "Temporal Hierarchies"
 
     def clean(self):
-        """Ensure that the start date is before the end date."""
+        """Ensure that the start is before the end."""
         super().clean()
         if self.start and self.end and self.start > self.end:
-            raise ValidationError("The start date cannot be later than the end date.")
+            raise ValidationError("The start cannot be later than the end.")
 
     def __str__(self):
         """String representation."""
@@ -43,11 +42,14 @@ class AbstractTemporalHierarchy(
 
 
 class Week(AbstractTemporalHierarchy):
-    """Week Model.
+    """
+    Week Model.
 
     Represents a week associated with a specific facility enrollment.
     """
 
+    start = models.DateField(verbose_name="Start Date")
+    end = models.DateField(verbose_name="End Date")
     facility_enrollment = models.ForeignKey(
         "FacilityEnrollment",
         on_delete=models.CASCADE,
@@ -55,16 +57,19 @@ class Week(AbstractTemporalHierarchy):
         verbose_name="Facility Enrollment",
     )
 
+    context_field = "facility_enrollment"
+
     class Meta:
         """Metadata."""
 
         verbose_name = "Week"
         verbose_name_plural = "Weeks"
         ordering = ["start"]
+        unique_together = ("slug", "facility_enrollment")
 
     def get_periods(self):
         """Return all periods associated with this week."""
-        return self.period_set.all()
+        return self.periods.all()
 
     def __str__(self):
         """String representation."""
@@ -72,14 +77,19 @@ class Week(AbstractTemporalHierarchy):
 
 
 class Period(AbstractTemporalHierarchy):
-    """Period Model.
+    """
+    Period Model.
 
     Represents a period within a specific week.
     """
 
+    start = models.TimeField(verbose_name="Start Time")
+    end = models.TimeField(verbose_name="End Time")
     week = models.ForeignKey(
         Week, on_delete=models.CASCADE, related_name="periods", verbose_name="Week"
     )
+
+    context_field = "week"
 
     class Meta:
         """Metadata."""
@@ -87,6 +97,7 @@ class Period(AbstractTemporalHierarchy):
         verbose_name = "Period"
         verbose_name_plural = "Periods"
         ordering = ["start"]
+        unique_together = ("slug", "week")
 
     def __str__(self):
         """String representation."""

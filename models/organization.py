@@ -5,6 +5,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from core.mixins import models as mixins
+
 # from core.mixins import settings as stgs
 
 from .temporal import AbstractTemporalHierarchy
@@ -15,6 +16,9 @@ class OrganizationEnrollment(AbstractTemporalHierarchy):
 
     Represents a specific enrollment period (e.g., a season) for an organization.
     """
+
+    start = models.DateField(verbose_name="Start Date")
+    end = models.DateField(verbose_name="End Date")
 
     organization = models.ForeignKey(
         "organization.Organization",

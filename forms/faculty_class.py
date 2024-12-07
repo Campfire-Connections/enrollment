@@ -7,13 +7,13 @@ from core.forms.base import BaseForm
 from user.models import User
 from course.models.facility_class import FacilityClass
 
-from ..models.facility import FacultyClassEnrollment
+from ..models.faculty_class import FacultyClassEnrollment
 
 class FacultyClassEnrollmentForm(BaseForm):
 
     class Meta:
         model = FacultyClassEnrollment
-        fields = ['faculty', 'facility_class', 'role', 'start_date', 'end_date']
+        fields = ['faculty', 'facility_class_enrollment', 'faculty_enrollment']
 
     def __init__(self, *args, **kwargs):
         """
@@ -37,11 +37,9 @@ class FacultyClassEnrollmentForm(BaseForm):
 
         # Add default attributes to the fields
         self.fields['faculty'].widget.attrs.update({'class': 'form-control'})
-        self.fields['facility_class'].widget.attrs.update({'class': 'form-control'})
-        self.fields['role'].widget.attrs.update({'class': 'form-control'})
-        self.fields['start_date'].widget.attrs.update({'class': 'form-control', 'type': 'date'})
-        self.fields['end_date'].widget.attrs.update({'class': 'form-control', 'type': 'date'})
-
+        self.fields['facility_class_enrollment'].widget.attrs.update({'class': 'form-control'})
+        self.fields['faculty_enrollment'].widget.attrs.update({'class': 'form-control'})
+        
     def clean(self):
         """
         Add custom validation logic.

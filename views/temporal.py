@@ -1,27 +1,28 @@
 # enrollment/views/temporal.py
 
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-)
-from ..models.temporal import Week, Period
-from ..models.faction import FactionEnrollment
-from ..models.facility import FacilityEnrollment
-from ..tables.temporal import PeriodTable
-from ..forms.period import PeriodForm
-from core.mixins.forms import (
-    FormValidMixin, SuccessMessageMixin, ErrorMessageMixin,
-    ConditionalRedirectMixin, PrefillFormMixin, ValidationErrorMixin
-)
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django_tables2 import MultiTableMixin
 from django_tables2.config import RequestConfig
+
+from core.views.base import (
+    BaseManageView,
+    BaseCreateView,
+    BaseDeleteView,
+    BaseDetailView,
+    BaseTableListView,
+    BaseUpdateView,
+)
+
+from ..models.temporal import Week, Period
+from ..models.faction import FactionEnrollment
+from ..models.facility import FacilityEnrollment
+from ..tables.temporal import PeriodTable, WeekTable
+from ..forms.period import PeriodForm
+
+
 from facility.models.quarters import Quarters, QuartersType
 from facility.models.facility import Facility
 from django.http import JsonResponse
@@ -29,7 +30,7 @@ from django.http import JsonResponse
 
 def load_weeks(request):
     facility_enrollment_id = request.GET.get("facility_enrollment")
-    weeks =Week.objects.filter(facility_enrollment_id=facility_enrollment_id).all()
+    weeks = Week.objects.filter(facility_enrollment_id=facility_enrollment_id).all()
     return JsonResponse(list(weeks.values("id", "name")), safe=False)
 
 
@@ -62,9 +63,7 @@ def load_quarters(request):
     return JsonResponse(list(available_quarters.values("id", "name")), safe=False)
 
 
-class WeekManageView(
-    LoginRequiredMixin, UserPassesTestMixin, MultiTableMixin, TemplateView
-):
+class WeekManageView(BaseManageView):
     template_name = "week/manage.html"
     enrollment = None
     facility = None
@@ -145,104 +144,125 @@ class WeekManageView(
         return self.request.user.user_type == "FACULTY" and self.request.user.is_admin
 
 
-class WeekIndexView(ListView):
+class WeekIndexView(BaseTableListView):
     model = Week
     template_name = "week/index.html"
     context_object_name = "weeks"
+    table_class = WeekTable
 
 
-class WeekShowView(DetailView):
+class WeekShowView(BaseDetailView):
     model = Week
     template_name = "week/show.html"
     context_object_name = "week"
+    slug_field = "slug"
+    slug_url_kwarg = "week_slug"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-class WeekCreateView(CreateView):
+        # Get the current week object
+        week = self.get_object()
+
+        # Create a queryset for the periods related to the week
+        periods = Period.objects.filter(week=week)
+
+        # Initialize the table
+        periods_table = PeriodTable(periods)
+
+        # Configure table with the request for pagination/sorting
+        RequestConfig(self.request).configure(periods_table)
+
+        # Add the table to the context
+        context["periods_table"] = periods_table
+        return context
+
+class WeekCreateView(BaseCreateView):
     model = Week
     fields = ["name", "start", "end", "facility_enrollment"]
     template_name = "week/form.html"
-    success_url = reverse_lazy("week:index")
+    success_url = reverse_lazy("weeks:index")
 
 
-class WeekUpdateView(UpdateView):
+class WeekUpdateView(BaseUpdateView):
     model = Week
     fields = ["name", "start", "end", "facility_enrollment"]
     template_name = "week/form.html"
-    success_url = reverse_lazy("week:index")
+    success_url = reverse_lazy("weeks:index")
 
 
-class WeekDeleteView(DeleteView):
+class WeekDeleteView(BaseDeleteView):
     model = Week
     template_name = "week/confirm_delete.html"
-    success_url = reverse_lazy("week:index")
+    success_url = reverse_lazy("weeks:index")
 
 
 # Similar views for Period
-class PeriodIndexView(ListView):
+class PeriodIndexView(BaseTableListView):
     model = Period
     template_name = "period/index.html"
     context_object_name = "periods"
 
 
-class PeriodShowView(DetailView):
+class PeriodShowView(BaseDetailView):
     model = Period
     template_name = "period/show.html"
     context_object_name = "period"
+    slug_field = "slug"
+    slug_url_kwarg = "period_slug"
 
-
-class PeriodCreateView(
-    FormValidMixin,
-    SuccessMessageMixin,
-    ErrorMessageMixin,
-    ValidationErrorMixin,
-    PrefillFormMixin,
-    CreateView
-):
+class PeriodCreateView(BaseCreateView):
     model = Period
     form_class = PeriodForm
-    template_name = 'period/form.html'
+    template_name = "period/form.html"
     success_message = "Period successfully created."
     error_message = "There was an error creating the period."
 
-    def get_initial(self):
-        """Prefill initial data."""
-        initial = super().get_initial()
-        week_slug = self.kwargs.get('week_slug')
-        if week_slug:
-            week = get_object_or_404(Week, slug=week_slug)
-            initial['week'] = week
-        return initial
-
     def get_form_kwargs(self):
-        """Pass the week instance to the form if slug is available."""
         kwargs = super().get_form_kwargs()
-        week_slug = self.kwargs.get('week_slug')
-        if week_slug:
-            kwargs['week'] = get_object_or_404(Week, slug=week_slug)
+
+        facility = get_object_or_404(Facility, slug=self.kwargs.get("facility_slug"))
+        facility_enrollment = get_object_or_404(
+            FacilityEnrollment, slug=self.kwargs.get("facility_enrollment_slug")
+        )
+        week = get_object_or_404(Week, slug=self.kwargs.get("week_slug"))
+
+        kwargs.update(
+            {
+                "facility": facility,
+                "facility_enrollment": facility_enrollment,
+                "week": week,
+            }
+        )
         return kwargs
 
     def get_success_url(self):
         """Redirect to the manage view for the associated week."""
-        week_slug = self.kwargs.get('week_slug')
-        return reverse('enrollment:weeks:manage', kwargs={'week_slug': week_slug})
+        week_slug = self.kwargs.get("week_slug")
+        return reverse("enrollments:weeks:manage", kwargs={"week_slug": week_slug})
 
     def get_context_data(self, **kwargs):
         """Add extra context for the template."""
         context = super().get_context_data(**kwargs)
-        week_slug = self.kwargs.get('week_slug')
+        week_slug = self.kwargs.get("week_slug")
         if week_slug:
-            context['week'] = get_object_or_404(Week, slug=week_slug)
+            context["week"] = get_object_or_404(Week, slug=week_slug)
         return context
 
+    def post(self, request, *args, **kwargs):
+        print(f"request: {request.POST}")
+        return super().post(request, *args, **kwargs)
 
-class PeriodUpdateView(UpdateView):
+    
+
+class PeriodUpdateView(BaseUpdateView):
     model = Period
     fields = ["name", "start", "end", "week"]
     template_name = "period/form.html"
-    success_url = reverse_lazy("period:index")
+    success_url = reverse_lazy("periods:index")
 
 
-class PeriodDeleteView(DeleteView):
+class PeriodDeleteView(BaseDeleteView):
     model = Period
     template_name = "period/confirm_delete.html"
-    success_url = reverse_lazy("period:index")
+    success_url = reverse_lazy("periods:index")

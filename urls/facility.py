@@ -7,7 +7,7 @@ from ..views.facility import (
     FacilityEnrollmentCreateView,
     FacilityEnrollmentUpdateView,
     FacilityEnrollmentDeleteView,
-    ManageView
+    FacilityEnrollmentManageView
 )
 
 
@@ -57,7 +57,7 @@ urlpatterns = [
     ),
     path(
         "<slug:facility_enrollment_slug>/manage/",
-        ManageView.as_view(),
+        FacilityEnrollmentManageView.as_view(),
         name="manage",
     ),
     path(

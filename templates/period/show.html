@@ -1,0 +1,30 @@
+<!--facility/templates/facility/show.html-->
+{% extends "base/show.html" %}
+{% load static %}
+{% load my_filters %}
+
+{% block title_text %}Period Details{% endblock title_text %}
+
+{% block cards %}
+<div id="show">
+    {% block object_details %}
+    <!-- Display basic facility information -->
+    <section class="card">
+        <h3>Period Information</h3>
+        <dl class="row">
+            <dt class="col-sm-3">Name:</dt>
+            <dd class="col-sm-9">{{ period.name | title }}</dd>
+
+            <dt class="col-sm-3">Description:</dt>
+            <dd class="col-sm-9">{{ period.description }}</dd>
+
+            <dt class="col-sm-3">Start:</dt>
+            <dd class="col-sm-9">{{ period.start }}</dd>
+
+            <dt class="col-sm-3">End:</dt>
+            <dd class="col-sm-9">{{ period.end }}</dd>
+        </dl>
+    </section>
+    {% endblock object_details %}
+</div>
+{% endblock cards %}

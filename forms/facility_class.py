@@ -2,34 +2,41 @@
 
 from core.forms.base import BaseForm
 from course.models.facility_class import FacilityClass
-from user.models import User
 
-from ..models.facility import FacultyClassEnrollment
+from ..models.facility_class import FacilityClassEnrollment
 
-class FacultyClassEnrollmentForm(BaseForm):
+class FacilityClassEnrollmentForm(BaseForm):
+    """
+    Form for managing FacilityClassEnrollment instances.
+    """
     class Meta:
-        model = FacultyClassEnrollment
-        fields = ['faculty', 'facility_class', 'role', 'start', 'end']
+        model = FacilityClassEnrollment
+        fields = ['facility_class', 'period', 'department', 'organization_enrollment']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Dynamic filtering of faculty and facility classes
-        self.fields['faculty'].queryset = User.objects.filter(user_type="FACULTY")
-        self.fields['facility_class'].queryset = FacilityClass.objects.filter(
-            facility_enrollment__facility=self.user.facultyprofile.facility
-        ) if self.user else FacilityClass.objects.none()
+        # Optionally filter FacilityClass if there's context like facility
+        if 'facility' in kwargs:
+            self.fields['facility_class'].queryset = FacilityClass.objects.filter(
+                facility=kwargs['facility']
+            )
+        else:
+            self.fields['facility_class'].queryset = FacilityClass.objects.all()
 
-        # Add CSS classes
+        # Add common styling or attributes
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
 
     def clean(self):
+        """
+        Custom validation logic for start_date and end_date fields.
+        """
         cleaned_data = super().clean()
-        start = cleaned_data.get('start')
-        end = cleaned_data.get('end')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
 
-        if start and end and start > end:
-            self.add_error('end', 'End date must be after the start date.')
+        if start_date and end_date and start_date > end_date:
+            self.add_error('end_date', "End date must be after the start date.")
 
         return cleaned_data

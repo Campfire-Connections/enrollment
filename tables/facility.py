@@ -1,9 +1,12 @@
 # enrollment/tables/facility.py
+
 import django_tables2 as tables
+
 from core.mixins.tables import OrganizationLabelMixin
 from core.tables.base import BaseTable
-from ..models.facility import FacilityEnrollment
 from course.models.facility_class import FacilityClass
+
+from ..models.facility import FacilityEnrollment
 
 class FacilityEnrollmentTable(OrganizationLabelMixin, BaseTable):
     organization_enrollment = tables.Column(
