@@ -7,9 +7,9 @@ class FacultyEnrollment(models.Model):
     """Faculty Enrollment Model."""
 
     faculty = models.ForeignKey(
-        "facility.Faculty",
+        "facility.FacultyProfile",
         on_delete=models.CASCADE,
-        related_name="enrollments",
+        related_name="faculty_enrollments",
         verbose_name="Faculty",
     )
     facility_enrollment = models.ForeignKey(
@@ -29,7 +29,7 @@ class FacultyEnrollment(models.Model):
     class Meta:
         verbose_name = "Faculty Enrollment"
         verbose_name_plural = "Faculty Enrollments"
-        ordering = ["faculty__last_name", "faculty__first_name"]
+        ordering = ["faculty__user__last_name", "faculty__user__first_name"]
         constraints = [
             models.UniqueConstraint(
                 fields=["faculty", "facility_enrollment", "quarters"],

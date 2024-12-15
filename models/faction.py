@@ -84,7 +84,7 @@ class LeaderEnrollment(AbstractTemporalHierarchy):
         verbose_name="Faction Enrollment",
     )
     leader = models.ForeignKey(
-        "faction.Leader",
+        "faction.LeaderProfile",
         on_delete=models.CASCADE,
         related_name="leader_enrollments",
         verbose_name="Leader",
@@ -127,7 +127,7 @@ class AttendeeEnrollment(
     """
 
     attendee = models.ForeignKey(
-        "faction.Attendee",
+        "faction.AttendeeProfile",
         on_delete=models.CASCADE,
         related_name="attendee_enrollments",
         verbose_name="Attendee",
@@ -152,7 +152,7 @@ class AttendeeEnrollment(
 
         verbose_name = "Attendee Enrollment"
         verbose_name_plural = "Attendee Enrollments"
-        ordering = ["attendee__last_name", "attendee__first_name"]
+        ordering = ["attendee__user__last_name", "attendee__user__first_name"]
 
     def __str__(self):
         """String representation."""
@@ -198,8 +198,8 @@ class AttendeeClassEnrollment(
         verbose_name = "Attendee Class Enrollment"
         verbose_name_plural = "Attendee Class Enrollments"
         ordering = [
-            "attendee_enrollment__attendee__last_name",
-            "attendee_enrollment__attendee__first_name",
+            "attendee_enrollment__attendee__user__last_name",
+            "attendee_enrollment__attendee__user__first_name",
         ]
 
     def __str__(self):

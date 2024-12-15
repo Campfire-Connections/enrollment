@@ -2,6 +2,7 @@
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 
 from core.views.base import (
     BaseManageView,
@@ -13,6 +14,9 @@ from core.views.base import (
     BaseUpdateView,
 )
 from facility.models.facility import Facility
+from facility.tables.faculty import FacultyTable
+from facility.models.faculty import FacultyProfile
+from user.models import User
 
 from ..models.facility import FacilityEnrollment
 from ..models.faculty import FacultyEnrollment
@@ -35,11 +39,21 @@ class FacilityEnrollmentManageView(BaseManageView):
 
     def get_tables_config(self):
         enrollment = self.get_enrollment()
+
         return {
             "weeks": {
                 "class": WeekTable,
                 "queryset": Week.objects.filter(facility_enrollment=enrollment),
                 "paginate_by": 7,
+            },
+            "faculty": {
+                "class": FacultyTable,
+                "queryset": FacultyProfile.objects.filter(
+                    faculty_enrollments__facility_enrollment=enrollment,
+                )
+                .select_related("user")
+                #.prefetch_related("facultyenrollment_set"),
+                # "queryset": User.faculty_manager.for_facility_enrollment(enrollment),
             },
         }
 
@@ -72,11 +86,13 @@ class FacilityEnrollmentManageView(BaseManageView):
             self.enrollment = get_object_or_404(
                 FacilityEnrollment, slug=enrollment_slug
             )
+
         return self.enrollment
 
     def __init__(self):
         self.enrollment = None
         self.facility = None
+
 
 class FacilityEnrollmentIndexView(BaseTableListView):
     model = FacilityEnrollment

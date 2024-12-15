@@ -4,18 +4,28 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 
 from core.mixins import models as mixins
+
 # from core.mixins import settings as stgs
 
-User = get_user_model()
+
+
+class Enrollment(models.Model):
+    user = models.ForeignKey("user.User", on_delete=models.CASCADE)
+    enrollment_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    enrollment_id = models.PositiveIntegerField()
+    enrollment = GenericForeignKey("enrollment_type", "enrollment_id")
 
 
 class ActiveEnrollment(models.Model):
     """Model to track the active enrollment of a user in various roles."""
 
     user = models.ForeignKey(
-        User,
+        "user.User",
         on_delete=models.CASCADE,
         related_name="active_enrollments",
         verbose_name="User",
