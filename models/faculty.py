@@ -2,6 +2,7 @@
 
 from django.db import models
 
+from ..querysets import FacultyEnrollmentQuerySet
 
 class FacultyEnrollment(models.Model):
     """Faculty Enrollment Model."""
@@ -25,6 +26,12 @@ class FacultyEnrollment(models.Model):
         verbose_name="Quarters",
     )
     role = models.CharField(max_length=100, blank=True, null=True)  # New field
+    
+    @property
+    def classes(self):
+        return self.facility_enrollment.facility_classes.all()
+    
+    objects = FacultyEnrollmentQuerySet.as_manager()
 
     class Meta:
         verbose_name = "Faculty Enrollment"

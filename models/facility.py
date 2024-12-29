@@ -33,6 +33,11 @@ class FacilityEnrollment(AbstractTemporalHierarchy):
         choices=[("active", "Active"), ("expired", "Expired")],
         default="active",
     )
+    facility_classes = models.ManyToManyField(
+        "course.FacilityClass",
+        related_name="facility_enrollments",
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Facility Enrollment"

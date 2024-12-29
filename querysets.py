@@ -24,3 +24,21 @@ class FactionEnrollmentQuerySet(AbstractBaseQuerySet):
         Returns enrollments belonging to a specific faction.
         """
         return self.filter(faction_id=faction_id)
+
+from django.db import models
+
+class FacultyEnrollmentQuerySet(AbstractBaseQuerySet):
+    def classes_for_faculty(self, faculty_profile, facility_enrollment=None):
+        """
+        Fetch the classes for a given faculty and facility enrollment.
+        """
+        qs = self.filter(faculty=faculty_profile)
+
+        if facility_enrollment:
+            qs = qs.filter(facility_enrollment=facility_enrollment)
+
+        # Traverse relationships to access FacilityClass
+        return qs.values(
+            "facility_enrollment__facility_classes__name",
+            "facility_enrollment__facility_classes__id",
+        )

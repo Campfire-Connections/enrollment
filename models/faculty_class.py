@@ -10,7 +10,7 @@ class FacultyClassEnrollment(models.Model):
     """
 
     faculty = models.ForeignKey(
-        "facility.Faculty",
+        "facility.FacultyProfile",
         on_delete=models.CASCADE,
         related_name="class_enrollments",
         verbose_name="Faculty",
@@ -37,7 +37,7 @@ class FacultyClassEnrollment(models.Model):
 
         verbose_name = "Faculty Class Enrollment"
         verbose_name_plural = "Faculty Class Enrollments"
-        ordering = ["faculty__last_name", "faculty__first_name"]
+        ordering = ["faculty__user__last_name", "faculty__user__first_name"]
 
     def __str__(self):
         """String representation."""

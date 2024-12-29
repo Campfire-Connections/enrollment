@@ -19,7 +19,9 @@ from core.views.base import (
 from ..models.temporal import Week, Period
 from ..models.faction import FactionEnrollment
 from ..models.facility import FacilityEnrollment
-from ..tables.temporal import PeriodTable, WeekTable
+from ..tables.week import WeekTable
+from ..tables.period import PeriodsByWeekTable
+from ..tables.faction import FactionEnrollmentTable
 from ..forms.period import PeriodForm
 
 
@@ -49,7 +51,6 @@ def load_quarters(request):
     available_quarters = Quarters.objects.filter(
         facility=facility, type=faction_quarters_type
     )
-    print(available_quarters)
     # Find quarters already assigned for this week within the same facility enrollment
     used_quarters = FactionEnrollment.objects.filter(
         week_id=week_id,
@@ -69,55 +70,60 @@ class WeekManageView(BaseManageView):
     facility = None
     week = None
 
-    def get_tables(self):
+    def get_tables_config(self):
         week = self.get_week()
 
-        # Construct querystrings
-        periods_qs = Period.objects.filter(week=week)
+        return {
+            "periods": {
+                "class": PeriodsByWeekTable,
+                "queryset": Period.objects.filter(week=week),
+                "paginate_by": 5,
+            },
+            "faction_enrollments": {
+                "class": FactionEnrollmentTable,
+                "queryset": FactionEnrollment.objects.filter(week=week),
+                "paginate_by": 10,
+            },
+        }
 
-        # Build tables with querystrings
-        period_table = PeriodTable(periods_qs)
+    # def get_context_data(self, **kwargs):
+    #     tables = self.get_tables()
+    #     print("Debug: Table value:", tables, type(tables))
 
-        # Configure tables with pagination and sorting
-        RequestConfig(self.request, paginate={"per_page": 8}).configure(period_table)
+    #     for table in tables:
+    #         print("Debug: Table value:", table, type(table))
 
-        return [
-            period_table,
-        ]
+    #     context = super().get_context_data(**kwargs)
+    #     facility = self.get_facility()
+    #     enrollment = self.get_enrollment()
+    #     week = self.get_week()
 
-    def get_context_data(self, **kwargs):
+    #     tables_with_names = [
+    #         {
+    #             "table": table,
+    #             "name": table.Meta.model._meta.verbose_name_plural,
+    #             "create_url": table.get_url(
+    #                 "add",
+    #                 context={
+    #                     "facility_slug": facility.slug,
+    #                     "facility_enrollment_slug": enrollment.slug,
+    #                     "week_slug": week.slug,
+    #                 },
+    #             ),
+    #             "icon": getattr(table, "add_icon", None),
+    #         }
+    #         for table in self.get_tables()
+    #     ]
+    #     context.update(
+    #         {
+    #             "tables_with_names": tables_with_names,
+    #             "facility": facility,
+    #             "enrollment": enrollment,
+    #             "week": week,
+    #         }
+    #     )
 
-        context = super().get_context_data(**kwargs)
-        facility = self.get_facility()
-        enrollment = self.get_enrollment()
-        week = self.get_week()
-
-        tables_with_names = [
-            {
-                "table": table,
-                "name": table.Meta.model._meta.verbose_name_plural,
-                "create_url": table.get_url(
-                    "add",
-                    context={
-                        "facility_slug": facility.slug,
-                        "facility_enrollment_slug": enrollment.slug,
-                        "week_slug": week.slug,
-                    },
-                ),
-                "icon": getattr(table, "add_icon", None),
-            }
-            for table in self.get_tables()
-        ]
-        context.update(
-            {
-                "tables_with_names": tables_with_names,
-                "facility": facility,
-                "enrollment": enrollment,
-                "week": week,
-            }
-        )
-
-        return context
+    #     return context
 
     def get_facility(self):
         if self.facility is None:
@@ -177,6 +183,7 @@ class WeekShowView(BaseDetailView):
         context["periods_table"] = periods_table
         return context
 
+
 class WeekCreateView(BaseCreateView):
     model = Week
     fields = ["name", "start", "end", "facility_enrollment"]
@@ -210,6 +217,7 @@ class PeriodShowView(BaseDetailView):
     context_object_name = "period"
     slug_field = "slug"
     slug_url_kwarg = "period_slug"
+
 
 class PeriodCreateView(BaseCreateView):
     model = Period
@@ -250,10 +258,8 @@ class PeriodCreateView(BaseCreateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        print(f"request: {request.POST}")
         return super().post(request, *args, **kwargs)
 
-    
 
 class PeriodUpdateView(BaseUpdateView):
     model = Period

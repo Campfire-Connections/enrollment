@@ -27,7 +27,7 @@ from ..forms.facility_class import FacilityClassEnrollmentForm
 from ..forms.faculty import FacultyEnrollmentForm
 from ..forms.faculty_class import FacultyClassEnrollmentForm
 from ..models.temporal import Week
-from ..tables.temporal import WeekTable
+from ..tables.week import WeekTable
 from ..tables.facility import FacilityEnrollmentTable
 from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable

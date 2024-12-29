@@ -18,8 +18,8 @@ urlpatterns = [
     path("new/", PeriodCreateView.as_view(), name="new"),
     path("<int:pk>/", PeriodShowView.as_view(), name="show"),
     path("<slug:period_slug>/", PeriodShowView.as_view(), name="show"),
-    path("<int:pk>/update/", PeriodUpdateView.as_view(), name="update"),
-    path("<slug:period_slug>/update/", PeriodUpdateView.as_view(), name="update"),
+    path("<int:pk>/update/", PeriodUpdateView.as_view(), name="edit"),
+    path("<slug:period_slug>/update/", PeriodUpdateView.as_view(), name="edit"),
     path("<int:pk>/delete/", PeriodDeleteView.as_view(), name="delete"),
     path(
         "<slug:period_slug>/delete/", PeriodDeleteView.as_view(), name="delete"
