@@ -16,53 +16,34 @@ app_name = "enrollments"
 urlpatterns = [
     # Attendee Enrollment URLs
     path(
-        "<int:pk>/enrollments/",
-        AttendeeEnrollmentIndexByAttendeeView.as_view(),
-        name="index_by_attendee",
-    ),
-    path(
-        "<slug:slug>/enrollments/",
-        AttendeeEnrollmentIndexByAttendeeView.as_view(),
-        name="index_by_attendee",
-    ),
-    path(
         "",
         AttendeeEnrollmentIndexView.as_view(),
-        name="attendee_enrollment_index",
+        name="index",
     ),
     path(
-        "create/",
+        "new/",
         AttendeeEnrollmentCreateView.as_view(),
-        name="attendee_enrollment_create",
+        name="new",
     ),
     path(
         "<int:pk>/",
         AttendeeEnrollmentShowView.as_view(),
-        name="attendee_enrollment_show",
+        name="show",
     ),
     path(
         "<slug:slug>/",
         AttendeeEnrollmentShowView.as_view(),
-        name="attendee_enrollment_show",
+        name="show",
     ),
     path(
-        "<int:pk>/update/",
+        "update/",
         AttendeeEnrollmentUpdateView.as_view(),
-        name="attendee_enrollment_update",
+        name="update",
     ),
+
     path(
-        "<slug:slug>/update/",
-        AttendeeEnrollmentUpdateView.as_view(),
-        name="attendee_enrollment_update",
-    ),
-    path(
-        "<int:pk>/delete/",
+        "delete/",
         AttendeeEnrollmentDeleteView.as_view(),
-        name="attendee_enrollment_delete",
-    ),
-    path(
-        "<slug:slug>/delete/",
-        AttendeeEnrollmentDeleteView.as_view(),
-        name="attendee_enrollment_delete",
+        name="delete",
     ),
 ]

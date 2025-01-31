@@ -1,7 +1,7 @@
 # enrollment/views/attendee.py
 
 from django_tables2 import SingleTableView
-from ..models.faction import AttendeeEnrollment
+from ..models.attendee import AttendeeEnrollment
 from ..tables.attendee import AttendeeEnrollmentTable
 from django.contrib.auth import get_user_model
 

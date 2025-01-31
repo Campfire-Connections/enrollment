@@ -96,7 +96,7 @@ class FacilityEnrollmentManageView(BaseManageView):
 
 class FacilityEnrollmentIndexView(BaseTableListView):
     model = FacilityEnrollment
-    template_name = "facility-enrollment/index.html"
+    template_name = "facility-enrollment/list.html"
     context_object_name = "facility enrollments"
     table_class = FacilityEnrollmentTable
 
@@ -167,7 +167,7 @@ class FacilityEnrollmentDeleteView(BaseDeleteView):
 
 class FacilityClassEnrollmentIndexView(BaseTableListView):
     model = FacilityClassEnrollment
-    template_name = "facility-class-enrollment/index.html"
+    template_name = "facility-class-enrollment/list.html"
     context_object_name = "facility class enrollments"
     table_class = FacilityClassEnrollmentTable
 
@@ -241,7 +241,7 @@ class FacilityClassEnrollmentDeleteView(BaseDeleteView):
 
 class FacultyEnrollmentIndexView(BaseTableListView):
     model = FacultyEnrollment
-    template_name = "faculty-enrollment/index.html"
+    template_name = "faculty-enrollment/list.html"
     context_object_name = "faculty enrollments"
     table_class = FacultyEnrollmentTable
 
@@ -315,7 +315,7 @@ class FacultyEnrollmentDeleteView(BaseDeleteView):
 
 class FacultyClassEnrollmentIndexView(BaseTableListView):
     model = FacultyClassEnrollment
-    template_name = "faculty-class-enrollment/index.html"
+    template_name = "faculty-class-enrollment/list.html"
     context_object_name = "faculty class enrollments"
     table_class = FacultyClassEnrollmentTable
 

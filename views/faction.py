@@ -12,12 +12,10 @@ from django.shortcuts import get_object_or_404
 
 from faction.models.faction import Faction
 
-from ..models.faction import (
-    FactionEnrollment,
-    LeaderEnrollment,
-    AttendeeEnrollment,
-    AttendeeClassEnrollment,
-)
+from ..models.faction import FactionEnrollment
+from ..models.leader import LeaderEnrollment
+from ..models.attendee import AttendeeEnrollment
+from ..models.attendee_class import AttendeeClassEnrollment
 from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
 
@@ -68,36 +66,7 @@ class FactionEnrollmentDeleteView(DeleteView):
     success_url = reverse_lazy("faction:faction_enrollment_index")
 
 
-class LeaderEnrollmentIndexView(ListView):
-    model = LeaderEnrollment
-    template_name = "leader-enrollment/index.html"
-    context_object_name = "leader_enrollments"
 
-
-class LeaderEnrollmentShowView(DetailView):
-    model = LeaderEnrollment
-    template_name = "leader-enrollment/show.html"
-    context_object_name = "leader_enrollment"
-
-
-class LeaderEnrollmentCreateView(CreateView):
-    model = LeaderEnrollment
-    fields = "__all__"
-    template_name = "leader-enrollment/form.html"
-    success_url = reverse_lazy("faction:leader_enrollment_index")
-
-
-class LeaderEnrollmentUpdateView(UpdateView):
-    model = LeaderEnrollment
-    fields = "__all__"
-    template_name = "leader_enrollment/form.html"
-    success_url = reverse_lazy("faction:leader_enrollment_index")
-
-
-class LeaderEnrollmentDeleteView(DeleteView):
-    model = LeaderEnrollment
-    template_name = "leader-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("faction:leader_enrollment_index")
 
 
 class AttendeeEnrollmentIndexView(ListView):

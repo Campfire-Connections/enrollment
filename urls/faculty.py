@@ -25,42 +25,42 @@ urlpatterns = [
     path(
         "enrollments/faculty/",
         FacultyEnrollmentIndexView.as_view(),
-        name="faculty_enrollment_index",
+        name="index",
     ),
     path(
         "enrollments/faculty/create/",
         FacultyEnrollmentCreateView.as_view(),
-        name="faculty_enrollment_create",
+        name="new",
     ),
     path(
         "enrollments/faculty/<int:pk>/",
         FacultyEnrollmentShowView.as_view(),
-        name="faculty_enrollment_show",
+        name="show",
     ),
     path(
         "enrollments/faculty/<slug:slug>/",
         FacultyEnrollmentShowView.as_view(),
-        name="faculty_enrollment_show",
+        name="show",
     ),
     path(
         "enrollments/faculty/<int:pk>/update/",
         FacultyEnrollmentUpdateView.as_view(),
-        name="faculty_enrollment_update",
+        name="update",
     ),
     path(
         "enrollments/faculty/<slug:slug>/update/",
         FacultyEnrollmentUpdateView.as_view(),
-        name="faculty_enrollment_update",
+        name="update",
     ),
     path(
         "enrollments/faculty/<int:pk>/delete/",
         FacultyEnrollmentDeleteView.as_view(),
-        name="faculty_enrollment_delete",
+        name="delete",
     ),
     path(
         "enrollments/faculty/<slug:slug>/delete/",
         FacultyEnrollmentDeleteView.as_view(),
-        name="faculty_enrollment_delete",
+        name="delete",
     ),
     # Faculty Class Enrollment URLs
     path(

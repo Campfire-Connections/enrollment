@@ -86,6 +86,10 @@ class FacultyEnrollmentByFacilityEnrollmentTable(FacultyEnrollmentTable):
         FacultyEnrollmentTable: The base table for faculty enrollment-related information.
     """
 
+    last_name = tables.Column(accessor="faculty.user.last_name", verbose_name="Last Name")
+    first_name = tables.Column(accessor="faculty.user.first_name", verbose_name="First Name")
+    faculty = None
+
     class Meta(FacultyEnrollmentTable.Meta):
-        fields = ("faculty", "start_date", "end_date", "quarters")
-        attrs = {"class": "table table-striped table-bordered"}
+        fields = ("last_name", "first_name", "start_date", "end_date", "quarters")
+        

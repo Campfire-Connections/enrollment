@@ -2,9 +2,11 @@
 
 from django.db import models
 
+from .temporal import AbstractTemporalHierarchy
+
 from ..querysets import FacultyEnrollmentQuerySet
 
-class FacultyEnrollment(models.Model):
+class FacultyEnrollment(AbstractTemporalHierarchy):
     """Faculty Enrollment Model."""
 
     faculty = models.ForeignKey(

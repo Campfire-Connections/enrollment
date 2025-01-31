@@ -1,0 +1,7 @@
+{% extends 'base/show.html' %}
+
+{% block title_text %}{{ facility_enrollment.name }}{% endblock title_text %}
+
+{% block object_identifier %}{% endblock object_identifier %}
+
+{% block object_details %}{{ object.facility | title }}{% endblock object_details %}

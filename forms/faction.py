@@ -20,7 +20,7 @@ class FactionEnrollmentForm(forms.ModelForm):
         label="Week",
         required=False
     )
-    quarter = forms.ModelChoiceField(
+    quarters = forms.ModelChoiceField(
         queryset=Quarters.objects.none(),
         label="Quarters (Faction)",
         required=False
@@ -28,7 +28,7 @@ class FactionEnrollmentForm(forms.ModelForm):
 
     class Meta:
         model = FactionEnrollment
-        fields = ['facility_enrollment', 'week', 'quarter'] #, 'start_date', 'end_date']
+        fields = ['facility_enrollment', 'week', 'quarters'] #, 'start_date', 'end_date']
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
