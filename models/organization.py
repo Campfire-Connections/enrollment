@@ -46,7 +46,7 @@ class OrganizationEnrollment(AbstractTemporalHierarchy):
 
     def get_courses(self):
         """Return all courses associated with this enrollment."""
-        return self.organizationcourse_set.all()
+        return self.courses.all()
 
 
 class OrganizationCourse(
