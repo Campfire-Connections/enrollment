@@ -11,6 +11,8 @@ from .availability import FacultyQuartersAvailability
 class FacultyEnrollment(AbstractTemporalHierarchy):
     """Faculty Enrollment Model."""
 
+    start = models.DateField(null=True, blank=True)
+    end = models.DateField(null=True, blank=True)
     faculty = models.ForeignKey(
         "facility.FacultyProfile",
         on_delete=models.CASCADE,
@@ -76,6 +78,10 @@ class FacultyEnrollment(AbstractTemporalHierarchy):
                 .only("facility_enrollment", "quarters")
                 .get(pk=self.pk)
             )
+        if self.facility_enrollment and not self.start:
+            self.start = self.facility_enrollment.start
+        if self.facility_enrollment and not self.end:
+            self.end = self.facility_enrollment.end
         result = super().save(*args, **kwargs)
         self._sync_quarters_reservation(previous)
         return result

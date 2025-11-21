@@ -68,8 +68,6 @@ class SchedulingService:
         quarters=None,
         attendee_enrollment=None,
         role=None,
-        start=None,
-        end=None,
     ):
         quarters = quarters or getattr(faction_enrollment, "quarters", None)
         if not quarters:
@@ -83,8 +81,6 @@ class SchedulingService:
         enrollment.quarters = quarters
         if role is not None:
             enrollment.role = role
-        enrollment.start = start or faction_enrollment.start
-        enrollment.end = end or faction_enrollment.end
         if not enrollment.name:
             attendee_name = getattr(attendee, "user", None)
             attendee_name = (
@@ -105,8 +101,6 @@ class SchedulingService:
         facility_enrollment,
         quarters,
         role=None,
-        start=None,
-        end=None,
         instance=None,
     ):
         self._ensure_faculty_quarters_capacity(
@@ -118,8 +112,6 @@ class SchedulingService:
         enrollment.quarters = quarters
         if role is not None:
             enrollment.role = role
-        enrollment.start = start or facility_enrollment.start
-        enrollment.end = end or facility_enrollment.end
         if not enrollment.name:
             faculty_name = getattr(faculty, "user", None)
             faculty_name = (
@@ -139,8 +131,6 @@ class SchedulingService:
         quarters=None,
         leader_enrollment=None,
         role=None,
-        start=None,
-        end=None,
     ):
         quarters = quarters or getattr(faction_enrollment, "quarters", None)
         if not quarters:
@@ -154,8 +144,6 @@ class SchedulingService:
         enrollment.quarters = quarters
         if role is not None:
             enrollment.role = role
-        enrollment.start = start or faction_enrollment.start
-        enrollment.end = end or faction_enrollment.end
         if not enrollment.name:
             leader_name = getattr(leader, "user", None)
             leader_name = (

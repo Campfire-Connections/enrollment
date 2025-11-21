@@ -10,6 +10,8 @@ from django.apps import apps
 class AttendeeEnrollment(AbstractTemporalHierarchy):
     """Attendee Enrollment Model."""
 
+    start = models.DateField(null=True, blank=True)
+    end = models.DateField(null=True, blank=True)
     attendee = models.ForeignKey(
         "faction.AttendeeProfile",
         on_delete=models.CASCADE,

@@ -131,8 +131,6 @@ class AttendeeEnrollmentCreateView(CreateView):
                 faction_enrollment=form.cleaned_data["faction_enrollment"],
                 quarters=form.cleaned_data.get("quarters"),
                 role=form.cleaned_data.get("role"),
-                start=form.cleaned_data.get("start"),
-                end=form.cleaned_data.get("end"),
             )
         except ValidationError as exc:
             form.add_error(None, exc)

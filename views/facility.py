@@ -290,8 +290,6 @@ class FacultyEnrollmentCreateView(BaseCreateView):
                 facility_enrollment=form.cleaned_data["facility_enrollment"],
                 quarters=form.cleaned_data["quarters"],
                 role=form.cleaned_data.get("role"),
-                start=form.cleaned_data.get("start"),
-                end=form.cleaned_data.get("end"),
             )
         except ValidationError as exc:
             form.add_error(None, exc)
@@ -327,8 +325,6 @@ class FacultyEnrollmentUpdateView(BaseUpdateView):
                 facility_enrollment=form.cleaned_data["facility_enrollment"],
                 quarters=form.cleaned_data["quarters"],
                 role=form.cleaned_data.get("role"),
-                start=form.cleaned_data.get("start"),
-                end=form.cleaned_data.get("end"),
                 instance=instance,
             )
         except ValidationError as exc:

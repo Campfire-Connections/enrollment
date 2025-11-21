@@ -11,6 +11,8 @@ from ..querysets import LeaderEnrollmentQuerySet
 class LeaderEnrollment(AbstractTemporalHierarchy):
     """Leader Enrollment Model."""
 
+    start = models.DateField(null=True, blank=True)
+    end = models.DateField(null=True, blank=True)
     leader = models.ForeignKey(
         "faction.LeaderProfile",
         on_delete=models.CASCADE,
