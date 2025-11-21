@@ -7,6 +7,7 @@ from core.mixins import settings as stgs
 
 from .organization import OrganizationEnrollment
 from .temporal import Period
+from .availability import FacilityClassAvailability
 
 
 class FacilityClassEnrollment(
@@ -36,3 +37,8 @@ class FacilityClassEnrollment(
 
     def __str__(self):
         return f"{self.facility_class} - {self.period} - {self.department}"
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        FacilityClassAvailability.for_enrollment(self)
+        return result

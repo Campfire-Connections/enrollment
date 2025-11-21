@@ -1,7 +1,7 @@
 # enrollment/models/faction.py
 """Faction Enrollment Related Models."""
 
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
 
 from core.mixins import models as mixins
@@ -10,6 +10,7 @@ from core.mixins import models as mixins
 
 from .temporal import AbstractTemporalHierarchy, Week
 from .facility_class import FacilityClassEnrollment
+from .availability import QuartersWeekAvailability
 from ..managers import (
     FactionEnrollmentManager,
     LeaderEnrollmentManager,
@@ -73,3 +74,65 @@ class FactionEnrollment(AbstractTemporalHierarchy):
         ):
             raise ValidationError("Week dates must fall within the enrollment period.")
 
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        previous = None
+        if self.pk:
+            previous = (
+                FactionEnrollment.objects.select_related(
+                    "facility_enrollment", "week", "quarters"
+                )
+                .only("facility_enrollment", "week", "quarters")
+                .get(pk=self.pk)
+            )
+        result = super().save(*args, **kwargs)
+        self._sync_quarters_reservation(previous)
+        return result
+
+    @transaction.atomic
+    def delete(self, *args, **kwargs):
+        self._release_current_quarters()
+        return super().delete(*args, **kwargs)
+
+    def _sync_quarters_reservation(self, previous):
+        changed = (
+            previous
+            and (
+                previous.quarters_id != self.quarters_id
+                or previous.week_id != self.week_id
+            )
+        )
+        if changed:
+            previous._release_current_quarters()
+        self._reserve_current_quarters()
+
+    def _availability_filter(self, quarters=None, week=None):
+        quarters = quarters or self.quarters
+        week = week or self.week
+        if not quarters or not week:
+            return None
+        return {
+            "facility_enrollment": self.facility_enrollment,
+            "week": week,
+            "quarters": quarters,
+        }
+
+    def _reserve_current_quarters(self):
+        lookup = self._availability_filter()
+        if not lookup:
+            return
+        availability, _ = QuartersWeekAvailability.objects.get_or_create(
+            defaults={"capacity": self.quarters.capacity},
+            **lookup,
+        )
+        availability.reserve_full()
+
+    def _release_current_quarters(self):
+        lookup = self._availability_filter()
+        if not lookup:
+            return
+        try:
+            availability = QuartersWeekAvailability.objects.get(**lookup)
+        except QuartersWeekAvailability.DoesNotExist:
+            return
+        availability.release_full()

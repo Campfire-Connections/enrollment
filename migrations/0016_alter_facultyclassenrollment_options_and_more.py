@@ -19,14 +19,19 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Faculty Class Enrollments",
             },
         ),
-        migrations.AlterField(
-            model_name="facultyclassenrollment",
-            name="faculty",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="class_enrollments",
-                to="facility.facultyprofile",
-                verbose_name="Faculty",
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name="facultyclassenrollment",
+                    name="faculty",
+                    field=models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="class_enrollments",
+                        to="facility.facultyprofile",
+                        verbose_name="Faculty",
+                    ),
+                )
+            ],
         ),
     ]
