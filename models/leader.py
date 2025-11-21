@@ -1,6 +1,8 @@
 # enrollment/models/leader.py
 
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.apps import apps
 
 from .temporal import AbstractTemporalHierarchy
 
@@ -46,3 +48,32 @@ class LeaderEnrollment(AbstractTemporalHierarchy):
     def __str__(self):
         """String representation."""
         return f"{self.leader} - {self.faction_enrollment.faction.name}"
+
+    def clean(self):
+        super().clean()
+        faction = self.faction_enrollment
+        quarters = self.quarters or getattr(faction, "quarters", None)
+        if not faction or not quarters:
+            raise ValidationError("Leader enrollments require faction and quarters.")
+        capacity = quarters.capacity or 0
+        if capacity > 0:
+            AttendeeEnrollment = apps.get_model("enrollment", "AttendeeEnrollment")
+            attendee_count = AttendeeEnrollment.objects.filter(
+                faction_enrollment=faction, quarters=quarters
+            ).count()
+            leader_count = (
+                LeaderEnrollment.objects.filter(
+                    faction_enrollment=faction, quarters=quarters
+                )
+                .exclude(pk=self.pk)
+                .count()
+            )
+            if attendee_count + leader_count >= capacity:
+                raise ValidationError("Selected quarters are already full.")
+
+    def save(self, *args, **kwargs):
+        if self.faction_enrollment and not self.start:
+            self.start = self.faction_enrollment.start
+        if self.faction_enrollment and not self.end:
+            self.end = self.faction_enrollment.end
+        super().save(*args, **kwargs)

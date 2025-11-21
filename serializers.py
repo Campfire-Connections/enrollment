@@ -19,6 +19,11 @@ class LeaderEnrollmentSerializer(serializers.ModelSerializer):
         model = LeaderEnrollment
         fields = "__all__"
 
+    def create(self, validated_data):
+        request = self.context.get("request")
+        service = SchedulingService(user=getattr(request, "user", None))
+        return service.schedule_leader_enrollment(**validated_data)
+
 
 class AttendeeEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:

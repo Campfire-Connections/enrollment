@@ -17,6 +17,7 @@ from facility.models.department import Department
 from facility.models.quarters import Quarters, QuartersType
 from facility.models.faculty import FacultyProfile
 from faction.models.attendee import AttendeeProfile
+from faction.models.leader import LeaderProfile
 from enrollment.models.faculty import FacultyEnrollment
 from course.models.facility_class import FacilityClass
 from enrollment.services import SchedulingService
@@ -160,6 +161,32 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
                 quarters=staff_quarters,
             )
 
+    def test_leader_enrollment_service_enforces_capacity(self):
+        limited_quarters = Quarters.objects.create(
+            name="Leader Cabin",
+            capacity=1,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Leader Week",
+            quarters=limited_quarters,
+        )
+        leader_one = self._create_leader_profile("leader.service.one")
+        leader_two = self._create_leader_profile("leader.service.two")
+        service = SchedulingService()
+        service.schedule_leader_enrollment(
+            leader=leader_one,
+            faction_enrollment=faction_enrollment,
+            quarters=limited_quarters,
+        )
+        with self.assertRaises(ValidationError):
+            service.schedule_leader_enrollment(
+                leader=leader_two,
+                faction_enrollment=faction_enrollment,
+                quarters=limited_quarters,
+            )
+
     def _build_facility_class_enrollment(self, max_enrollment=10):
         department = Department.objects.create(
             name="Program",
@@ -223,4 +250,17 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             user=user,
             organization=self.organization,
             facility=self.facility,
+        )
+
+    def _create_leader_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.LEADER,
+            )
+        return LeaderProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            faction=self.faction,
         )

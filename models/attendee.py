@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from .temporal import AbstractTemporalHierarchy
 from ..querysets import AttendeeEnrollmentQuerySet
+from django.apps import apps
 
 class AttendeeEnrollment(AbstractTemporalHierarchy):
     """Attendee Enrollment Model."""
@@ -58,14 +59,18 @@ class AttendeeEnrollment(AbstractTemporalHierarchy):
             raise ValidationError("Attendee enrollments require faction and quarters.")
         capacity = quarters.capacity or 0
         if capacity > 0:
-            occupied = (
+            attendee_count = (
                 AttendeeEnrollment.objects.filter(
                     faction_enrollment=faction, quarters=quarters
                 )
                 .exclude(pk=self.pk)
                 .count()
             )
-            if occupied >= capacity:
+            LeaderEnrollment = apps.get_model("enrollment", "LeaderEnrollment")
+            leader_count = LeaderEnrollment.objects.filter(
+                faction_enrollment=faction, quarters=quarters
+            ).count()
+            if attendee_count + leader_count >= capacity:
                 raise ValidationError("Selected quarters are already full.")
 
     def save(self, *args, **kwargs):
