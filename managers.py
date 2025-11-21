@@ -5,6 +5,7 @@ from .querysets import (
     FactionEnrollmentQuerySet,
     LeaderEnrollmentQuerySet,
     AttendeeEnrollmentQuerySet,
+    FacilityEnrollmentQuerySet,
 )
 
 
@@ -44,3 +45,14 @@ class FactionEnrollmentManager(AbstractBaseManager):
         Utilizes the custom `by_organization` method from FactionQuerySet.
         """
         return self.get_queryset().by_faction(faction_id)
+
+    def with_related(self):
+        return self.get_queryset().with_related()
+
+
+class FacilityEnrollmentManager(AbstractBaseManager):
+    def get_queryset(self):
+        return FacilityEnrollmentQuerySet(self.model, using=self._db)
+
+    def with_schedule(self):
+        return self.get_queryset().with_schedule()

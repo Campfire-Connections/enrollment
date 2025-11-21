@@ -84,7 +84,7 @@ class FacilityEnrollmentManageView(BaseManageView):
         if self.enrollment is None:
             enrollment_slug = self.kwargs.get("facility_enrollment_slug")
             self.enrollment = get_object_or_404(
-                FacilityEnrollment, slug=enrollment_slug
+                FacilityEnrollment.objects.with_schedule(), slug=enrollment_slug
             )
 
         return self.enrollment
@@ -100,6 +100,9 @@ class FacilityEnrollmentIndexView(BaseTableListView):
     context_object_name = "facility enrollments"
     table_class = FacilityEnrollmentTable
 
+    def get_queryset(self):
+        return FacilityEnrollment.objects.with_schedule()
+
 
 class FacilityEnrollmentShowView(BaseDetailView):
     model = FacilityEnrollment
@@ -107,6 +110,9 @@ class FacilityEnrollmentShowView(BaseDetailView):
     context_object_name = "facility enrollment"
     slug_field = "slug"
     slug_url_kwarg = "facility_enrollment_slug"
+
+    def get_queryset(self):
+        return FacilityEnrollment.objects.with_schedule()
 
     def get_tables_config(self):
         enrollment = self.get_object()

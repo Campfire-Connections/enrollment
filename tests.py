@@ -10,6 +10,7 @@ from enrollment.models.availability import (
 )
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 from enrollment.models.faction import FactionEnrollment
+from enrollment.models.facility import FacilityEnrollment
 from enrollment.models.facility_class import FacilityClassEnrollment
 from enrollment.models.temporal import Period, Week
 from facility.models.department import Department
@@ -122,3 +123,28 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
         enrollment.delete()
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 0)
+
+    def test_facility_enrollment_queryset_prefetches_schedule(self):
+        enrollment = FacilityEnrollment.objects.with_schedule().get(
+            pk=self.facility_enrollment.pk
+        )
+        with self.assertNumQueries(0):
+            list(enrollment.weeks.all())
+
+    def test_faction_enrollment_queryset_selects_related(self):
+        faction_enrollment = FactionEnrollment.objects.create(
+            facility_enrollment=self.facility_enrollment,
+            start=self.week.start,
+            end=self.week.end,
+            faction=self.faction,
+            week=self.week,
+            quarters=self.quarters,
+            name="Eagle Week One",
+        )
+        enrollment = FactionEnrollment.objects.with_related().get(
+            pk=faction_enrollment.pk
+        )
+        with self.assertNumQueries(0):
+            _ = enrollment.facility_enrollment.facility.name
+            _ = enrollment.week.name
+            _ = enrollment.quarters.name

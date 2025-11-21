@@ -25,11 +25,17 @@ class FactionEnrollmentIndexView(ListView):
     template_name = "faction-enrollment/index.html"
     context_object_name = "faction_enrollments"
 
+    def get_queryset(self):
+        return FactionEnrollment.objects.with_related()
+
 
 class FactionEnrollmentShowView(DetailView):
     model = FactionEnrollment
     template_name = "faction-enrollment/show.html"
     context_object_name = "faction_enrollment"
+
+    def get_queryset(self):
+        return FactionEnrollment.objects.with_related()
 
 
 class FactionEnrollmentCreateView(CreateView):
@@ -74,10 +80,16 @@ class AttendeeEnrollmentIndexView(ListView):
     template_name = "attendee-enrollment/index.html"
     context_object_name = "attendee_enrollments"
 
+    def get_queryset(self):
+        return AttendeeEnrollment.objects.with_related()
+
 class AttendeeEnrollmentIndexByAttendee(ListView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/index.html"
     context_object_name = "attendee_enrollments"
+
+    def get_queryset(self):
+        return AttendeeEnrollment.objects.with_related()
     
 class AttendeeEnrollmentShowView(DetailView):
     model = AttendeeEnrollment

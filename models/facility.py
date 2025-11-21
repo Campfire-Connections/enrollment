@@ -9,6 +9,7 @@ from core.mixins import settings as stgs
 
 from .temporal import AbstractTemporalHierarchy
 from .organization import OrganizationEnrollment
+from ..managers import FacilityEnrollmentManager
 
 
 class FacilityEnrollment(AbstractTemporalHierarchy):
@@ -38,6 +39,7 @@ class FacilityEnrollment(AbstractTemporalHierarchy):
         related_name="facility_enrollments",
         blank=True,
     )
+    objects = FacilityEnrollmentManager()
 
     class Meta:
         verbose_name = "Facility Enrollment"
