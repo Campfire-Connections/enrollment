@@ -9,6 +9,8 @@ from django.views.generic import (
 )
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect
+from django.core.exceptions import ValidationError
 
 from faction.models.faction import Faction
 
@@ -18,6 +20,7 @@ from ..models.attendee import AttendeeEnrollment
 from ..models.attendee_class import AttendeeClassEnrollment
 from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
+from ..services import SchedulingService
 
 
 class FactionEnrollmentIndexView(ListView):
@@ -44,6 +47,7 @@ class FactionEnrollmentCreateView(CreateView):
     template_name = "faction-enrollment/form.html"
     success_url = reverse_lazy("factions:enrollments:index")
     form_class = FactionEnrollmentForm
+    service_class = SchedulingService
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -53,8 +57,23 @@ class FactionEnrollmentCreateView(CreateView):
 
     def form_valid(self, form):
         faction = get_object_or_404(Faction, slug=self.kwargs.get("slug"))
-        form.instance.faction = faction  # Associate the faction with the enrollment
-        return super().form_valid(form)
+        service = self.service_class(user=self.request.user)
+        week = form.cleaned_data["week"]
+        try:
+            self.object = service.schedule_faction_enrollment(
+                faction=faction,
+                facility_enrollment=form.cleaned_data["facility_enrollment"],
+                week=week,
+                quarters=form.cleaned_data["quarters"],
+                start=week.start,
+                end=week.end,
+                name=form.instance.name or f"{faction.name} - {week.name}",
+                description=form.instance.description,
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("factions:show", kwargs={"slug": self.object.faction.slug})
@@ -134,6 +153,22 @@ class AttendeeClassEnrollmentCreateView(CreateView):
     fields = "__all__"
     template_name = "attendee-class-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+    service_class = SchedulingService
+
+    def form_valid(self, form):
+        service = self.service_class(user=self.request.user)
+        try:
+            self.object = service.assign_attendee_to_class(
+                attendee=form.cleaned_data["attendee"],
+                attendee_enrollment=form.cleaned_data.get("attendee_enrollment"),
+                facility_class_enrollment=form.cleaned_data[
+                    "facility_class_enrollment"
+                ],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class AttendeeClassEnrollmentUpdateView(UpdateView):

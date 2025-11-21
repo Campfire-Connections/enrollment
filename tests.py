@@ -17,6 +17,7 @@ from facility.models.department import Department
 from facility.models.quarters import Quarters, QuartersType
 from faction.models.attendee import AttendeeProfile
 from course.models.facility_class import FacilityClass
+from enrollment.services import SchedulingService
 
 User = get_user_model()
 
@@ -73,46 +74,13 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             )
 
     def test_class_enrollment_updates_availability(self):
-        department = Department.objects.create(
-            name="Program",
-            abbreviation="PRG",
-            facility=self.facility,
-        )
-        period = Period.objects.create(
-            name="Morning",
-            start=time(8, 0),
-            end=time(9, 0),
-            week=self.week,
-        )
-        facility_class = FacilityClass.objects.create(
-            name="First Aid",
-            organization_course=self.org_course,
-            facility_enrollment=self.facility_enrollment,
-            max_enrollment=10,
-        )
-        facility_class_enrollment = FacilityClassEnrollment.objects.create(
-            facility_class=facility_class,
-            period=period,
-            department=department,
-            organization_enrollment=self.org_enrollment,
-            max_enrollment=10,
-        )
+        facility_class_enrollment = self._build_facility_class_enrollment()
         availability = FacilityClassAvailability.for_enrollment(
             facility_class_enrollment
         )
         self.assertEqual(availability.capacity, 10)
 
-        with mute_profile_signals():
-            user = User.objects.create_user(
-                username="attendee.availability",
-                password="pass12345",
-                user_type=User.UserType.ATTENDEE,
-            )
-        attendee = AttendeeProfile.objects.create(
-            user=user,
-            organization=self.organization,
-            faction=self.faction,
-        )
+        attendee = self._create_attendee_profile("attendee.availability")
         enrollment = AttendeeClassEnrollment.objects.create(
             attendee=attendee,
             facility_class_enrollment=facility_class_enrollment,
@@ -123,6 +91,23 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
         enrollment.delete()
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 0)
+
+    def test_scheduling_service_prevents_overbooking(self):
+        facility_class_enrollment = self._build_facility_class_enrollment(
+            max_enrollment=1
+        )
+        attendee_one = self._create_attendee_profile("attendee.service.one")
+        attendee_two = self._create_attendee_profile("attendee.service.two")
+        service = SchedulingService()
+        service.assign_attendee_to_class(
+            attendee=attendee_one,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+        with self.assertRaises(ValidationError):
+            service.assign_attendee_to_class(
+                attendee=attendee_two,
+                facility_class_enrollment=facility_class_enrollment,
+            )
 
     def test_facility_enrollment_queryset_prefetches_schedule(self):
         enrollment = FacilityEnrollment.objects.with_schedule().get(
@@ -148,3 +133,42 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             _ = enrollment.facility_enrollment.facility.name
             _ = enrollment.week.name
             _ = enrollment.quarters.name
+
+    def _build_facility_class_enrollment(self, max_enrollment=10):
+        department = Department.objects.create(
+            name="Program",
+            abbreviation="PRG",
+            facility=self.facility,
+        )
+        period = Period.objects.create(
+            name="Morning",
+            start=time(8, 0),
+            end=time(9, 0),
+            week=self.week,
+        )
+        facility_class = FacilityClass.objects.create(
+            name="First Aid",
+            organization_course=self.org_course,
+            facility_enrollment=self.facility_enrollment,
+            max_enrollment=max_enrollment,
+        )
+        return FacilityClassEnrollment.objects.create(
+            facility_class=facility_class,
+            period=period,
+            department=department,
+            organization_enrollment=self.org_enrollment,
+            max_enrollment=max_enrollment,
+        )
+
+    def _create_attendee_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.ATTENDEE,
+            )
+        return AttendeeProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            faction=self.faction,
+        )
