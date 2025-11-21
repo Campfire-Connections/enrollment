@@ -1,6 +1,7 @@
 # enrollment/models/attendee.py
 
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from .temporal import AbstractTemporalHierarchy
 from ..querysets import AttendeeEnrollmentQuerySet
@@ -48,3 +49,28 @@ class AttendeeEnrollment(AbstractTemporalHierarchy):
     def __str__(self):
         """String representation."""
         return f"{self.attendee} - {self.faction_enrollment.faction.name}"
+
+    def clean(self):
+        super().clean()
+        faction = self.faction_enrollment
+        quarters = self.quarters or getattr(faction, "quarters", None)
+        if not faction or not quarters:
+            raise ValidationError("Attendee enrollments require faction and quarters.")
+        capacity = quarters.capacity or 0
+        if capacity > 0:
+            occupied = (
+                AttendeeEnrollment.objects.filter(
+                    faction_enrollment=faction, quarters=quarters
+                )
+                .exclude(pk=self.pk)
+                .count()
+            )
+            if occupied >= capacity:
+                raise ValidationError("Selected quarters are already full.")
+
+    def save(self, *args, **kwargs):
+        if self.faction_enrollment and not self.start:
+            self.start = self.faction_enrollment.start
+        if self.faction_enrollment and not self.end:
+            self.end = self.faction_enrollment.end
+        super().save(*args, **kwargs)

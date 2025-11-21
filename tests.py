@@ -47,15 +47,7 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
         )
 
     def test_faction_enrollment_reserves_quarters(self):
-        FactionEnrollment.objects.create(
-            facility_enrollment=self.facility_enrollment,
-            start=self.week.start,
-            end=self.week.end,
-            faction=self.faction,
-            week=self.week,
-            quarters=self.quarters,
-            name="Eagle Week One",
-        )
+        self._create_faction_enrollment(name="Eagle Week One")
         availability = QuartersWeekAvailability.objects.get(
             week=self.week, quarters=self.quarters
         )
@@ -63,15 +55,7 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
         self.assertEqual(availability.capacity, self.quarters.capacity)
 
         with self.assertRaises(ValidationError):
-            FactionEnrollment.objects.create(
-                facility_enrollment=self.facility_enrollment,
-                start=self.week.start,
-                end=self.week.end,
-                faction=self.faction,
-                week=self.week,
-                quarters=self.quarters,
-                name="Eagle Week One Retry",
-            )
+            self._create_faction_enrollment(name="Eagle Week One Retry")
 
     def test_class_enrollment_updates_availability(self):
         facility_class_enrollment = self._build_facility_class_enrollment()
@@ -117,14 +101,8 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             list(enrollment.weeks.all())
 
     def test_faction_enrollment_queryset_selects_related(self):
-        faction_enrollment = FactionEnrollment.objects.create(
-            facility_enrollment=self.facility_enrollment,
-            start=self.week.start,
-            end=self.week.end,
-            faction=self.faction,
-            week=self.week,
-            quarters=self.quarters,
-            name="Eagle Week One",
+        faction_enrollment = self._create_faction_enrollment(
+            name="Eagle Week One Again"
         )
         enrollment = FactionEnrollment.objects.with_related().get(
             pk=faction_enrollment.pk
@@ -133,6 +111,30 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             _ = enrollment.facility_enrollment.facility.name
             _ = enrollment.week.name
             _ = enrollment.quarters.name
+
+    def test_attendee_enrollment_service_enforces_capacity(self):
+        limited_quarters = Quarters.objects.create(
+            name="Limited Hut",
+            capacity=1,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Limited Week",
+            quarters=limited_quarters,
+        )
+        attendee_one = self._create_attendee_profile("attendee.service.one")
+        attendee_two = self._create_attendee_profile("attendee.service.two")
+        service = SchedulingService()
+        service.schedule_attendee_enrollment(
+            attendee=attendee_one,
+            faction_enrollment=faction_enrollment,
+        )
+        with self.assertRaises(ValidationError):
+            service.schedule_attendee_enrollment(
+                attendee=attendee_two,
+                faction_enrollment=faction_enrollment,
+            )
 
     def _build_facility_class_enrollment(self, max_enrollment=10):
         department = Department.objects.create(
@@ -171,4 +173,17 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             user=user,
             organization=self.organization,
             faction=self.faction,
+        )
+
+    def _create_faction_enrollment(self, name, quarters=None, week=None):
+        week = week or self.week
+        quarters = quarters or self.quarters
+        return FactionEnrollment.objects.create(
+            facility_enrollment=self.facility_enrollment,
+            start=week.start,
+            end=week.end,
+            faction=self.faction,
+            week=week,
+            quarters=quarters,
+            name=name,
         )

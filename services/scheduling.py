@@ -5,6 +5,7 @@ from enrollment.models.availability import (
     FacilityClassAvailability,
     QuartersWeekAvailability,
 )
+from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 from enrollment.models.faction import FactionEnrollment
 
@@ -57,6 +58,44 @@ class SchedulingService:
         )
         return self._persist(enrollment)
 
+    def schedule_attendee_enrollment(
+        self,
+        *,
+        attendee,
+        faction_enrollment,
+        quarters=None,
+        attendee_enrollment=None,
+        role=None,
+        start=None,
+        end=None,
+    ):
+        quarters = quarters or getattr(faction_enrollment, "quarters", None)
+        if not quarters:
+            raise ValidationError("Quarters are required for attendee enrollment.")
+        self._ensure_attendee_capacity(
+            faction_enrollment, quarters, exclude=attendee_enrollment
+        )
+        enrollment = attendee_enrollment or AttendeeEnrollment()
+        enrollment.attendee = attendee
+        enrollment.faction_enrollment = faction_enrollment
+        enrollment.quarters = quarters
+        if role is not None:
+            enrollment.role = role
+        enrollment.start = start or faction_enrollment.start
+        enrollment.end = end or faction_enrollment.end
+        if not enrollment.name:
+            attendee_name = getattr(attendee, "user", None)
+            attendee_name = (
+                attendee_name.get_full_name().strip()
+                if attendee_name
+                else str(attendee)
+            )
+            week_label = getattr(faction_enrollment.week, "name", "")
+            enrollment.name = (
+                f"{attendee_name} ({week_label})" if week_label else attendee_name
+            )
+        return self._persist(enrollment)
+
     @transaction.atomic
     def _persist(self, enrollment):
         enrollment.full_clean()
@@ -81,3 +120,17 @@ class SchedulingService:
         )
         if availability.remaining <= 0:
             raise ValidationError("This class is already at capacity.")
+
+    def _ensure_attendee_capacity(
+        self, faction_enrollment, quarters, exclude=None
+    ):
+        capacity = quarters.capacity or 0
+        if capacity <= 0:
+            return
+        qs = AttendeeEnrollment.objects.filter(
+            faction_enrollment=faction_enrollment, quarters=quarters
+        )
+        if exclude is not None and getattr(exclude, "pk", None):
+            qs = qs.exclude(pk=exclude.pk)
+        if qs.count() >= capacity:
+            raise ValidationError("Selected quarters are already full.")

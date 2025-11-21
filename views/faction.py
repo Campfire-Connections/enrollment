@@ -121,6 +121,23 @@ class AttendeeEnrollmentCreateView(CreateView):
     fields = "__all__"
     template_name = "attendee-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_enrollment_index")
+    service_class = SchedulingService
+
+    def form_valid(self, form):
+        service = self.service_class(user=self.request.user)
+        try:
+            self.object = service.schedule_attendee_enrollment(
+                attendee=form.cleaned_data["attendee"],
+                faction_enrollment=form.cleaned_data["faction_enrollment"],
+                quarters=form.cleaned_data.get("quarters"),
+                role=form.cleaned_data.get("role"),
+                start=form.cleaned_data.get("start"),
+                end=form.cleaned_data.get("end"),
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class AttendeeEnrollmentUpdateView(UpdateView):
