@@ -1,10 +1,12 @@
 # enrollment/models/faculty.py
 
-from django.db import models
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
 
 from .temporal import AbstractTemporalHierarchy
 
 from ..querysets import FacultyEnrollmentQuerySet
+from .availability import FacultyQuartersAvailability
 
 class FacultyEnrollment(AbstractTemporalHierarchy):
     """Faculty Enrollment Model."""
@@ -49,3 +51,76 @@ class FacultyEnrollment(AbstractTemporalHierarchy):
     def __str__(self):
         """String representation."""
         return f"{self.faculty} - {self.facility_enrollment.facility.name}"
+
+    def clean(self):
+        super().clean()
+        if not self.facility_enrollment or not self.quarters:
+            raise ValidationError("Faculty enrollments require quarters assignment.")
+        capacity = self.quarters.capacity or 0
+        if capacity > 0:
+            qs = FacultyEnrollment.objects.filter(
+                facility_enrollment=self.facility_enrollment,
+                quarters=self.quarters,
+            ).exclude(pk=self.pk)
+            if qs.count() >= capacity:
+                raise ValidationError("Selected quarters are already full for faculty.")
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        previous = None
+        if self.pk:
+            previous = (
+                FacultyEnrollment.objects.select_related(
+                    "facility_enrollment", "quarters"
+                )
+                .only("facility_enrollment", "quarters")
+                .get(pk=self.pk)
+            )
+        result = super().save(*args, **kwargs)
+        self._sync_quarters_reservation(previous)
+        return result
+
+    @transaction.atomic
+    def delete(self, *args, **kwargs):
+        self._release_current_quarters()
+        return super().delete(*args, **kwargs)
+
+    def _availability_lookup(self, quarters=None):
+        quarters = quarters or self.quarters
+        if not self.facility_enrollment or not quarters:
+            return None
+        return {
+            "facility_enrollment": self.facility_enrollment,
+            "quarters": quarters,
+        }
+
+    def _sync_quarters_reservation(self, previous):
+        changed = (
+            previous
+            and (
+                previous.quarters_id != self.quarters_id
+                or previous.facility_enrollment_id != self.facility_enrollment_id
+            )
+        )
+        if changed:
+            previous._release_current_quarters()
+        self._reserve_current_quarters()
+
+    def _reserve_current_quarters(self):
+        lookup = self._availability_lookup()
+        if not lookup:
+            return
+        availability, _ = FacultyQuartersAvailability.objects.get_or_create(
+            defaults={"capacity": self.quarters.capacity or 1}, **lookup
+        )
+        availability.reserve_slot()
+
+    def _release_current_quarters(self):
+        lookup = self._availability_lookup()
+        if not lookup:
+            return
+        try:
+            availability = FacultyQuartersAvailability.objects.get(**lookup)
+        except FacultyQuartersAvailability.DoesNotExist:
+            return
+        availability.release_slot()

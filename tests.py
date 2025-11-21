@@ -15,7 +15,9 @@ from enrollment.models.facility_class import FacilityClassEnrollment
 from enrollment.models.temporal import Period, Week
 from facility.models.department import Department
 from facility.models.quarters import Quarters, QuartersType
+from facility.models.faculty import FacultyProfile
 from faction.models.attendee import AttendeeProfile
+from enrollment.models.faculty import FacultyEnrollment
 from course.models.facility_class import FacilityClass
 from enrollment.services import SchedulingService
 
@@ -136,6 +138,28 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
                 faction_enrollment=faction_enrollment,
             )
 
+    def test_faculty_enrollment_service_enforces_capacity(self):
+        staff_quarters = Quarters.objects.create(
+            name="Staff Cabin",
+            capacity=1,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faculty_one = self._create_faculty_profile("faculty.service.one")
+        faculty_two = self._create_faculty_profile("faculty.service.two")
+        service = SchedulingService()
+        service.schedule_faculty_enrollment(
+            faculty=faculty_one,
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+        )
+        with self.assertRaises(ValidationError):
+            service.schedule_faculty_enrollment(
+                faculty=faculty_two,
+                facility_enrollment=self.facility_enrollment,
+                quarters=staff_quarters,
+            )
+
     def _build_facility_class_enrollment(self, max_enrollment=10):
         department = Department.objects.create(
             name="Program",
@@ -186,4 +210,17 @@ class AvailabilityTrackingTests(BaseDomainTestCase):
             week=week,
             quarters=quarters,
             name=name,
+        )
+
+    def _create_faculty_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.FACULTY,
+            )
+        return FacultyProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            facility=self.facility,
         )

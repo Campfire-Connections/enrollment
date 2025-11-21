@@ -4,10 +4,13 @@ from django.db import transaction
 from enrollment.models.availability import (
     FacilityClassAvailability,
     QuartersWeekAvailability,
+    FacultyQuartersAvailability,
 )
 from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 from enrollment.models.faction import FactionEnrollment
+from enrollment.models.faculty import FacultyEnrollment
+from enrollment.models.faculty import FacultyEnrollment
 
 
 class SchedulingService:
@@ -96,6 +99,39 @@ class SchedulingService:
             )
         return self._persist(enrollment)
 
+    def schedule_faculty_enrollment(
+        self,
+        *,
+        faculty,
+        facility_enrollment,
+        quarters,
+        role=None,
+        start=None,
+        end=None,
+        instance=None,
+    ):
+        self._ensure_faculty_quarters_capacity(
+            facility_enrollment, quarters, exclude=instance
+        )
+        enrollment = instance or FacultyEnrollment()
+        enrollment.faculty = faculty
+        enrollment.facility_enrollment = facility_enrollment
+        enrollment.quarters = quarters
+        if role is not None:
+            enrollment.role = role
+        enrollment.start = start or facility_enrollment.start
+        enrollment.end = end or facility_enrollment.end
+        if not enrollment.name:
+            faculty_name = getattr(faculty, "user", None)
+            faculty_name = (
+                faculty_name.get_full_name().strip()
+                if faculty_name
+                else str(faculty)
+            )
+            session_label = facility_enrollment.facility.name
+            enrollment.name = f"{faculty_name} ({session_label})"
+        return self._persist(enrollment)
+
     @transaction.atomic
     def _persist(self, enrollment):
         enrollment.full_clean()
@@ -134,3 +170,15 @@ class SchedulingService:
             qs = qs.exclude(pk=exclude.pk)
         if qs.count() >= capacity:
             raise ValidationError("Selected quarters are already full.")
+
+    def _ensure_faculty_quarters_capacity(
+        self, facility_enrollment, quarters, exclude=None
+    ):
+        capacity = quarters.capacity or 1
+        qs = FacultyEnrollment.objects.filter(
+            facility_enrollment=facility_enrollment, quarters=quarters
+        )
+        if exclude is not None and getattr(exclude, "pk", None):
+            qs = qs.exclude(pk=exclude.pk)
+        if qs.count() >= capacity:
+            raise ValidationError("Faculty quarters are already full.")

@@ -97,3 +97,28 @@ class FacilityClassAvailability(BaseAvailability):
         )
         availability.ensure_capacity(enrollment.max_enrollment)
         return availability
+
+
+class FacultyQuartersAvailability(BaseAvailability):
+    facility_enrollment = models.ForeignKey(
+        "enrollment.FacilityEnrollment",
+        on_delete=models.CASCADE,
+        related_name="faculty_quarters_availability",
+    )
+    quarters = models.ForeignKey(
+        "facility.Quarters",
+        on_delete=models.CASCADE,
+        related_name="faculty_availability",
+    )
+
+    class Meta:
+        unique_together = ("facility_enrollment", "quarters")
+        indexes = [models.Index(fields=["facility_enrollment", "quarters"])]
+
+    def reserve_slot(self):
+        if self.remaining <= 0:
+            raise ValidationError("Faculty quarters are already at capacity.")
+        self.reserve()
+
+    def release_slot(self):
+        self.release()

@@ -3,6 +3,8 @@
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
+from django.core.exceptions import ValidationError
 
 from core.views.base import (
     BaseManageView,
@@ -32,6 +34,7 @@ from ..tables.facility import FacilityEnrollmentTable
 from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable
 from ..tables.faculty_class import FacultyClassEnrollmentTable
+from ..services import SchedulingService
 
 
 class FacilityEnrollmentManageView(BaseManageView):
@@ -265,6 +268,7 @@ class FacultyEnrollmentCreateView(BaseCreateView):
     form_class = FacultyEnrollmentForm
     template_name = "faculty-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:index"
+    service_class = SchedulingService
 
     def get_success_url(self):
         """
@@ -277,6 +281,22 @@ class FacultyEnrollmentCreateView(BaseCreateView):
                 "faculty_slug": self.kwargs.get("faculty_slug"),
             },
         )
+
+    def form_valid(self, form):
+        service = self.service_class(user=self.request.user)
+        try:
+            self.object = service.schedule_faculty_enrollment(
+                faculty=form.cleaned_data["faculty"],
+                facility_enrollment=form.cleaned_data["facility_enrollment"],
+                quarters=form.cleaned_data["quarters"],
+                role=form.cleaned_data.get("role"),
+                start=form.cleaned_data.get("start"),
+                end=form.cleaned_data.get("end"),
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class FacultyEnrollmentUpdateView(BaseUpdateView):
@@ -284,6 +304,7 @@ class FacultyEnrollmentUpdateView(BaseUpdateView):
     form_class = FacultyEnrollmentForm
     template_name = "faculty-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:index"
+    service_class = SchedulingService
 
     def get_success_url(self):
         """
@@ -297,6 +318,23 @@ class FacultyEnrollmentUpdateView(BaseUpdateView):
             },
         )
 
+    def form_valid(self, form):
+        service = self.service_class(user=self.request.user)
+        instance = self.get_object()
+        try:
+            self.object = service.schedule_faculty_enrollment(
+                faculty=form.cleaned_data["faculty"],
+                facility_enrollment=form.cleaned_data["facility_enrollment"],
+                quarters=form.cleaned_data["quarters"],
+                role=form.cleaned_data.get("role"),
+                start=form.cleaned_data.get("start"),
+                end=form.cleaned_data.get("end"),
+                instance=instance,
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
 class FacultyEnrollmentDeleteView(BaseDeleteView):
     model = FacultyEnrollment
