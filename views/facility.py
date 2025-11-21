@@ -2,13 +2,11 @@
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from django.http import HttpResponseRedirect
 from django.core.exceptions import ValidationError
 
 from core.views.base import (
     BaseManageView,
-    BaseIndexByFilterTableView,
     BaseCreateView,
     BaseDeleteView,
     BaseDetailView,
@@ -18,7 +16,6 @@ from core.views.base import (
 from facility.models.facility import Facility
 from facility.tables.faculty import FacultyTable
 from facility.models.faculty import FacultyProfile
-from user.models import User
 
 from ..models.facility import FacilityEnrollment
 from ..models.faculty import FacultyEnrollment
@@ -35,6 +32,7 @@ from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable
 from ..tables.faculty_class import FacultyClassEnrollmentTable
 from ..services import SchedulingService
+from ..utils import format_validation_error
 
 
 class FacilityEnrollmentManageView(BaseManageView):
@@ -292,7 +290,7 @@ class FacultyEnrollmentCreateView(BaseCreateView):
                 role=form.cleaned_data.get("role"),
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 
@@ -328,7 +326,7 @@ class FacultyEnrollmentUpdateView(BaseUpdateView):
                 instance=instance,
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 

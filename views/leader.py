@@ -3,7 +3,6 @@
 from rest_framework import viewsets
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from django.http import HttpResponseRedirect
 from django.core.exceptions import ValidationError
 
@@ -14,14 +13,12 @@ from core.views.base import (
     BaseDetailView,
     BaseUpdateView,
 )
-from user.models import User
 from enrollment.tables.leader import LeaderEnrollmentTable
 from enrollment.models.leader import LeaderEnrollment
 from enrollment.serializers import LeaderEnrollmentSerializer
 from enrollment.forms.leader import LeaderEnrollmentForm
 from enrollment.services import SchedulingService
-
-User = get_user_model()
+from enrollment.utils import format_validation_error
 
 
 class IndexView(BaseTableListView):
@@ -75,7 +72,7 @@ class CreateView(LoginRequiredMixin, BaseCreateView):
                 role=form.cleaned_data.get("role"),
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 
@@ -112,7 +109,7 @@ class UpdateView(LoginRequiredMixin, BaseUpdateView):
                 role=form.cleaned_data.get("role"),
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 

@@ -21,6 +21,7 @@ from ..models.attendee_class import AttendeeClassEnrollment
 from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
 from ..services import SchedulingService
+from ..utils import format_validation_error
 
 
 class FactionEnrollmentIndexView(ListView):
@@ -71,7 +72,7 @@ class FactionEnrollmentCreateView(CreateView):
                 description=form.instance.description,
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 
@@ -133,7 +134,7 @@ class AttendeeEnrollmentCreateView(CreateView):
                 role=form.cleaned_data.get("role"),
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 
@@ -181,7 +182,7 @@ class AttendeeClassEnrollmentCreateView(CreateView):
                 ],
             )
         except ValidationError as exc:
-            form.add_error(None, exc)
+            form.add_error(None, format_validation_error(exc))
             return self.form_invalid(form)
         return HttpResponseRedirect(self.get_success_url())
 

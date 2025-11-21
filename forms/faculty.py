@@ -1,7 +1,6 @@
 # enrollment/forms/faculty.py
 
 from core.forms.base import BaseForm
-from facility.models.facility import Facility
 from facility.models.faculty import FacultyProfile
 
 from ..models.faculty import FacultyEnrollment
