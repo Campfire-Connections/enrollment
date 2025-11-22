@@ -14,29 +14,13 @@ class FacilityClassEnrollmentForm(BaseForm):
         fields = ['facility_class', 'period', 'department', 'organization_enrollment']
 
     def __init__(self, *args, **kwargs):
+        facility = kwargs.pop("facility", None)
         super().__init__(*args, **kwargs)
 
-        # Optionally filter FacilityClass if there's context like facility
-        if 'facility' in kwargs:
-            self.fields['facility_class'].queryset = FacilityClass.objects.filter(
-                facility=kwargs['facility']
-            )
-        else:
-            self.fields['facility_class'].queryset = FacilityClass.objects.all()
+        qs = FacilityClass.objects.all()
+        if facility:
+            qs = qs.filter(facility_enrollment__facility=facility)
+        self.fields["facility_class"].queryset = qs
 
-        # Add common styling or attributes
         for field in self.fields.values():
-            field.widget.attrs.update({'class': 'form-control'})
-
-    def clean(self):
-        """
-        Custom validation logic for start_date and end_date fields.
-        """
-        cleaned_data = super().clean()
-        start_date = cleaned_data.get('start_date')
-        end_date = cleaned_data.get('end_date')
-
-        if start_date and end_date and start_date > end_date:
-            self.add_error('end_date', "End date must be after the start date.")
-
-        return cleaned_data
+            field.widget.attrs.setdefault("class", "form-control")
