@@ -2,8 +2,6 @@
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
-from django.core.exceptions import ValidationError
 
 from core.views.base import (
     BaseManageView,
@@ -19,20 +17,20 @@ from facility.models.faculty import FacultyProfile
 
 from ..models.facility import FacilityEnrollment
 from ..models.faculty import FacultyEnrollment
-from ..models.facility_class import FacilityClassEnrollment
-from ..models.faculty_class import FacultyClassEnrollment
+from ..models.facility_class import FacilityClassEnrollment as FacilityClassEnrollmentRecord
+from ..models.faculty_class import FacultyClassEnrollment as FacultyClassAssignment
 from ..forms.facility import FacilityEnrollmentForm
 from ..forms.facility_class import FacilityClassEnrollmentForm
 from ..forms.faculty import FacultyEnrollmentForm
-from ..forms.faculty_class import FacultyClassEnrollmentForm
+from ..forms.faculty_class import FacultyClassEnrollmentForm as FacultyClassAssignmentForm
 from ..models.temporal import Week
 from ..tables.week import WeekTable
 from ..tables.facility import FacilityEnrollmentTable
 from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable
-from ..tables.faculty_class import FacultyClassEnrollmentTable
+from ..tables.faculty_class import FacultyClassEnrollmentTable as FacultyClassAssignmentTable
 from ..services import SchedulingService
-from ..utils import format_validation_error
+from ..mixin import SchedulingServiceFormMixin
 
 
 class FacilityEnrollmentManageView(BaseManageView):
@@ -173,14 +171,14 @@ class FacilityEnrollmentDeleteView(BaseDeleteView):
 
 
 class FacilityClassEnrollmentIndexView(BaseTableListView):
-    model = FacilityClassEnrollment
+    model = FacilityClassEnrollmentRecord
     template_name = "facility-class-enrollment/list.html"
     context_object_name = "facility class enrollments"
     table_class = FacilityClassEnrollmentTable
 
 
 class FacilityClassEnrollmentShowView(BaseDetailView):
-    model = FacilityClassEnrollment
+    model = FacilityClassEnrollmentRecord
     template_name = "facility-class-enrollment/show.html"
     context_object_name = "facility class enrollment"
     slug_field = "slug"
@@ -188,7 +186,7 @@ class FacilityClassEnrollmentShowView(BaseDetailView):
 
 
 class FacilityClassEnrollmentCreateView(BaseCreateView):
-    model = FacilityClassEnrollment
+    model = FacilityClassEnrollmentRecord
     form_class = FacilityClassEnrollmentForm
     template_name = "facility-class-enrollment/form.html"
     success_url_pattern = "facilities:enrollments:index"
@@ -207,7 +205,7 @@ class FacilityClassEnrollmentCreateView(BaseCreateView):
 
 
 class FacilityClassEnrollmentUpdateView(BaseUpdateView):
-    model = FacilityClassEnrollment
+    model = FacilityClassEnrollmentRecord
     form_class = FacilityClassEnrollmentForm
     template_name = "facility-class-enrollment/form.html"
     success_url_pattern = "facilities:enrollments:classes:index"
@@ -226,7 +224,7 @@ class FacilityClassEnrollmentUpdateView(BaseUpdateView):
 
 
 class FacilityClassEnrollmentDeleteView(BaseDeleteView):
-    model = FacilityClassEnrollment
+    model = FacilityClassEnrollmentRecord
     template_name = "facility-class-enrollment/confirm_delete.html"
     success_url_pattern = "facilities:enrollments:classes:index"
 
@@ -261,12 +259,42 @@ class FacultyEnrollmentShowView(BaseDetailView):
     slug_url_kwarg = "faculty_enrollment_slug"
 
 
-class FacultyEnrollmentCreateView(BaseCreateView):
+class FacultyEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateView):
     model = FacultyEnrollment
     form_class = FacultyEnrollmentForm
     template_name = "faculty-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:index"
     service_class = SchedulingService
+    service_method = "schedule_faculty_enrollment"
+
+    def get_success_url(self):
+        """
+        Dynamically generate the success URL using the facility_slug from kwargs.
+        """
+        return reverse(
+            self.success_url_pattern,
+            kwargs={
+                "facility_slug": self.kwargs.get("facility_slug"),
+                "faculty_slug": self.kwargs.get("faculty_slug"),
+            },
+        )
+
+    def get_service_kwargs(self, form):
+        return {
+            "faculty": form.cleaned_data["faculty"],
+            "facility_enrollment": form.cleaned_data["facility_enrollment"],
+            "quarters": form.cleaned_data["quarters"],
+            "role": form.cleaned_data.get("role"),
+        }
+
+
+class FacultyEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateView):
+    model = FacultyEnrollment
+    form_class = FacultyEnrollmentForm
+    template_name = "faculty-enrollment/form.html"
+    success_url_pattern = "facilities:faculty:enrollments:index"
+    service_class = SchedulingService
+    service_method = "schedule_faculty_enrollment"
 
     def get_success_url(self):
         """
@@ -281,54 +309,17 @@ class FacultyEnrollmentCreateView(BaseCreateView):
         )
 
     def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        try:
-            self.object = service.schedule_faculty_enrollment(
-                faculty=form.cleaned_data["faculty"],
-                facility_enrollment=form.cleaned_data["facility_enrollment"],
-                quarters=form.cleaned_data["quarters"],
-                role=form.cleaned_data.get("role"),
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+        self.object = self.get_object()
+        return super().form_valid(form)
 
-
-class FacultyEnrollmentUpdateView(BaseUpdateView):
-    model = FacultyEnrollment
-    form_class = FacultyEnrollmentForm
-    template_name = "faculty-enrollment/form.html"
-    success_url_pattern = "facilities:faculty:enrollments:index"
-    service_class = SchedulingService
-
-    def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
-        return reverse(
-            self.success_url_pattern,
-            kwargs={
-                "facility_slug": self.kwargs.get("facility_slug"),
-                "faculty_slug": self.kwargs.get("faculty_slug"),
-            },
-        )
-
-    def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        instance = self.get_object()
-        try:
-            self.object = service.schedule_faculty_enrollment(
-                faculty=form.cleaned_data["faculty"],
-                facility_enrollment=form.cleaned_data["facility_enrollment"],
-                quarters=form.cleaned_data["quarters"],
-                role=form.cleaned_data.get("role"),
-                instance=instance,
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+    def get_service_kwargs(self, form):
+        return {
+            "faculty": form.cleaned_data["faculty"],
+            "facility_enrollment": form.cleaned_data["facility_enrollment"],
+            "quarters": form.cleaned_data["quarters"],
+            "role": form.cleaned_data.get("role"),
+            "instance": self.object,
+        }
 
 class FacultyEnrollmentDeleteView(BaseDeleteView):
     model = FacultyEnrollment
@@ -352,14 +343,14 @@ class FacultyEnrollmentDeleteView(BaseDeleteView):
 
 
 class FacultyClassEnrollmentIndexView(BaseTableListView):
-    model = FacultyClassEnrollment
+    model = FacultyClassAssignment
     template_name = "faculty-class-enrollment/list.html"
     context_object_name = "faculty class enrollments"
-    table_class = FacultyClassEnrollmentTable
+    table_class = FacultyClassAssignmentTable
 
 
 class FacultyClassEnrollmentShowView(BaseDetailView):
-    model = FacultyClassEnrollment
+    model = FacultyClassAssignment
     template_name = "faculty-class-enrollment/show.html"
     context_object_name = "faculty class enrollment"
     slug_field = "slug"
@@ -367,8 +358,8 @@ class FacultyClassEnrollmentShowView(BaseDetailView):
 
 
 class FacultyClassEnrollmentCreateView(BaseCreateView):
-    model = FacultyClassEnrollment
-    form_class = FacultyClassEnrollmentForm
+    model = FacultyClassAssignment
+    form_class = FacultyClassAssignmentForm
     template_name = "faculty-class-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:classes:show"
 
@@ -388,8 +379,8 @@ class FacultyClassEnrollmentCreateView(BaseCreateView):
 
 
 class FacultyClassEnrollmentUpdateView(BaseUpdateView):
-    model = FacultyClassEnrollment
-    form_class = FacultyClassEnrollmentForm
+    model = FacultyClassAssignment
+    form_class = FacultyClassAssignmentForm
     template_name = "faculty-class-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:classes:show"
 
@@ -409,7 +400,7 @@ class FacultyClassEnrollmentUpdateView(BaseUpdateView):
 
 
 class FacultyClassEnrollmentDeleteView(BaseDeleteView):
-    model = FacultyClassEnrollment
+    model = FacultyClassAssignment
     template_name = "faculty-class-enrollment/confirm_delete.html"
     success_url_pattern = "facilities:faculty:enrollments:classes:index"
 
