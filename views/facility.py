@@ -365,6 +365,18 @@ class FacultyClassEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateVie
     service_class = SchedulingService
     service_method = "assign_faculty_to_class"
 
+    def get_facility(self):
+        if not hasattr(self, "_facility"):
+            self._facility = get_object_or_404(
+                Facility, slug=self.kwargs.get("facility_slug")
+            )
+        return self._facility
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["facility"] = self.get_facility()
+        return kwargs
+
     def get_success_url(self):
         """
         Dynamically generate the success URL using the facility_slug from kwargs.
@@ -396,6 +408,18 @@ class FacultyClassEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateVie
     success_url_pattern = "facilities:faculty:enrollments:classes:show"
     service_class = SchedulingService
     service_method = "assign_faculty_to_class"
+
+    def get_facility(self):
+        if not hasattr(self, "_facility"):
+            self._facility = get_object_or_404(
+                Facility, slug=self.kwargs.get("facility_slug")
+            )
+        return self._facility
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["facility"] = self.get_facility()
+        return kwargs
 
     def get_success_url(self):
         """

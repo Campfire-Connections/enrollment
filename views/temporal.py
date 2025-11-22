@@ -14,13 +14,14 @@ from core.views.base import (
     BaseDetailView,
     BaseTableListView,
     BaseUpdateView,
+    build_tables_from_config,
 )
 
 from ..models.temporal import Week, Period
 from ..models.faction import FactionEnrollment
 from ..models.facility import FacilityEnrollment
 from ..tables.week import WeekTable
-from ..tables.period import PeriodsByWeekTable
+from ..tables.period import PeriodsByWeekTable, PeriodTable
 from ..tables.faction import FactionEnrollmentTable
 from ..forms.period import PeriodForm
 
@@ -166,21 +167,19 @@ class WeekShowView(BaseDetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Get the current week object
-        week = self.get_object()
-
-        # Create a queryset for the periods related to the week
-        periods = Period.objects.filter(week=week)
-
-        # Initialize the table
-        periods_table = PeriodTable(periods)
-
-        # Configure table with the request for pagination/sorting
-        RequestConfig(self.request).configure(periods_table)
-
-        # Add the table to the context
-        context["periods_table"] = periods_table
+        context.update(
+            build_tables_from_config(
+                self.request,
+                {
+                    "periods_table": {
+                        "class": PeriodTable,
+                        "queryset": Period.objects.filter(week=self.get_object()),
+                        "paginate_by": None,
+                    }
+                },
+                default_paginate=None,
+            )
+        )
         return context
 
 

@@ -21,12 +21,13 @@ class FacultyClassEnrollmentForm(BaseForm):
         """
         Initialize the form with dynamic querysets and user context.
         """
+        facility_override = kwargs.pop("facility", None)
         super().__init__(*args, **kwargs)
 
-        profile = (
+        user_profile = (
             getattr(self.user, "facultyprofile_profile", None) if self.user else None
         )
-        facility = getattr(profile, "facility", None)
+        facility = facility_override or getattr(user_profile, "facility", None)
 
         if facility:
             self.fields["faculty"].queryset = FacultyProfile.objects.filter(
@@ -43,10 +44,16 @@ class FacultyClassEnrollmentForm(BaseForm):
                 FacilityClassSchedule.objects.none()
             )
 
-        if profile:
-            self.fields["faculty_enrollment"].queryset = profile.faculty_enrollments.all()
+        if user_profile and not facility_override:
+            enrollments_qs = user_profile.faculty_enrollments.all()
+        elif facility:
+            enrollments_qs = FacultyAssignment.objects.filter(
+                facility_enrollment__facility=facility
+            )
         else:
-            self.fields["faculty_enrollment"].queryset = FacultyAssignment.objects.none()
+            enrollments_qs = FacultyAssignment.objects.none()
+
+        self.fields["faculty_enrollment"].queryset = enrollments_qs
 
         # Add default attributes to the fields
         for name in self.fields:
