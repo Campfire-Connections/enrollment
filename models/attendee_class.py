@@ -61,12 +61,12 @@ class AttendeeClassEnrollment(models.Model):
         return super().delete(*args, **kwargs)
 
     def _sync_class_reservation(self, previous):
-        previous_enrollment = None
-        if previous and previous.facility_class_enrollment_id != self.facility_class_enrollment_id:
-            previous_enrollment = previous.facility_class_enrollment
-        if previous_enrollment:
-            self._release_slot(previous_enrollment)
-        self._reserve_current_slot()
+        if not previous:
+            self._reserve_current_slot()
+            return
+        if previous.facility_class_enrollment_id != self.facility_class_enrollment_id:
+            self._release_slot(previous.facility_class_enrollment)
+            self._reserve_current_slot()
 
     def _reserve_current_slot(self):
         if not self.facility_class_enrollment_id:

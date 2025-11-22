@@ -3,8 +3,6 @@
 from rest_framework import viewsets
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
-from django.http import HttpResponseRedirect
-from django.core.exceptions import ValidationError
 
 from core.views.base import (
     BaseTableListView,
@@ -18,7 +16,7 @@ from enrollment.models.leader import LeaderEnrollment
 from enrollment.serializers import LeaderEnrollmentSerializer
 from enrollment.forms.leader import LeaderEnrollmentForm
 from enrollment.services import SchedulingService
-from enrollment.utils import format_validation_error
+from enrollment.mixin import SchedulingServiceFormMixin
 
 
 class IndexView(BaseTableListView):
@@ -46,11 +44,12 @@ class ShowView(BaseDetailView):
     context_object_name = "leader_enrollment"
 
 
-class CreateView(LoginRequiredMixin, BaseCreateView):
+class CreateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseCreateView):
     model = LeaderEnrollment
     form_class = LeaderEnrollmentForm
     template_name = "leader-enrollment/form.html"
     service_class = SchedulingService
+    service_method = "schedule_leader_enrollment"
 
     def get_success_url(self):
         faction_slug = self.object.faction.slug
@@ -62,27 +61,13 @@ class CreateView(LoginRequiredMixin, BaseCreateView):
             },
         )
 
-    def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        try:
-            self.object = service.schedule_leader_enrollment(
-                leader=form.cleaned_data["leader"],
-                faction_enrollment=form.cleaned_data["faction_enrollment"],
-                quarters=form.cleaned_data.get("quarters"),
-                role=form.cleaned_data.get("role"),
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
-
-
-class UpdateView(LoginRequiredMixin, BaseUpdateView):
+class UpdateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseUpdateView):
     model = LeaderEnrollment
     form_class = LeaderEnrollmentForm
     template_name = "leader_enrollment/form.html"
     action = "Edit"
     service_class = SchedulingService
+    service_method = "schedule_leader_enrollment"
 
     def get_success_url(self):
         """
@@ -98,20 +83,13 @@ class UpdateView(LoginRequiredMixin, BaseUpdateView):
         )
 
     def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        instance = self.get_object()
-        try:
-            self.object = service.schedule_leader_enrollment(
-                leader=form.cleaned_data["leader"],
-                faction_enrollment=form.cleaned_data["faction_enrollment"],
-                quarters=form.cleaned_data.get("quarters"),
-                leader_enrollment=instance,
-                role=form.cleaned_data.get("role"),
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+        self.object = self.get_object()
+        return super().form_valid(form)
+
+    def get_service_kwargs(self, form):
+        kwargs = super().get_service_kwargs(form)
+        kwargs["leader_enrollment"] = self.object
+        return kwargs
 
 
 class DeleteView(BaseDeleteView):

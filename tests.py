@@ -276,6 +276,60 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
             )
 
 
+class SchedulingServiceUpdateTests(EnrollmentScenarioBase):
+    def test_attendee_enrollment_update_does_not_block_self(self):
+        tight_quarters = Quarters.objects.create(
+            name="Cabin Tight",
+            capacity=1,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Tight Week",
+            quarters=tight_quarters,
+        )
+        attendee = self._create_attendee_profile("attendee.single")
+        service = SchedulingService()
+        enrollment = service.schedule_attendee_enrollment(
+            attendee=attendee,
+            faction_enrollment=faction_enrollment,
+            quarters=tight_quarters,
+        )
+        updated = service.schedule_attendee_enrollment(
+            attendee=attendee,
+            faction_enrollment=faction_enrollment,
+            quarters=tight_quarters,
+            role="assistant",
+            attendee_enrollment=enrollment,
+        )
+        self.assertEqual(enrollment.pk, updated.pk)
+        self.assertEqual(updated.role, "assistant")
+
+    def test_attendee_class_enrollment_update_respects_capacity(self):
+        facility_class_enrollment = self._build_facility_class_enrollment(
+            max_enrollment=1
+        )
+        attendee = self._create_attendee_profile("attendee.class.one")
+        service = SchedulingService()
+        enrollment = service.assign_attendee_to_class(
+            attendee=attendee,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+        updated = service.assign_attendee_to_class(
+            attendee=attendee,
+            facility_class_enrollment=facility_class_enrollment,
+            attendee_class_enrollment=enrollment,
+        )
+        self.assertEqual(enrollment.pk, updated.pk)
+
+        other_attendee = self._create_attendee_profile("attendee.class.two")
+        with self.assertRaises(ValidationError):
+            service.assign_attendee_to_class(
+                attendee=other_attendee,
+                facility_class_enrollment=facility_class_enrollment,
+            )
+
+
 class SerializerSchedulingTests(EnrollmentScenarioBase):
     def setUp(self):
         super().setUp()

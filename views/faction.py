@@ -9,8 +9,6 @@ from django.views.generic import (
 )
 from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
-from django.core.exceptions import ValidationError
 
 from faction.models.faction import Faction
 
@@ -21,7 +19,7 @@ from ..models.attendee_class import AttendeeClassEnrollment
 from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
 from ..services import SchedulingService
-from ..utils import format_validation_error
+from ..mixin import SchedulingServiceFormMixin
 
 
 class FactionEnrollmentIndexView(ListView):
@@ -42,39 +40,36 @@ class FactionEnrollmentShowView(DetailView):
         return FactionEnrollment.objects.with_related()
 
 
-class FactionEnrollmentCreateView(CreateView):
+class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = FactionEnrollment
     #fields = "__all__"
     template_name = "faction-enrollment/form.html"
     success_url = reverse_lazy("factions:enrollments:index")
     form_class = FactionEnrollmentForm
     service_class = SchedulingService
+    service_method = "schedule_faction_enrollment"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        faction = get_object_or_404(Faction, slug=self.kwargs.get("slug"))
-        context["faction"] = faction
+        context["faction"] = self._get_faction()
         return context
 
-    def form_valid(self, form):
-        faction = get_object_or_404(Faction, slug=self.kwargs.get("slug"))
-        service = self.service_class(user=self.request.user)
+    def _get_faction(self):
+        return get_object_or_404(Faction, slug=self.kwargs.get("slug"))
+
+    def get_service_kwargs(self, form):
+        faction = self._get_faction()
         week = form.cleaned_data["week"]
-        try:
-            self.object = service.schedule_faction_enrollment(
-                faction=faction,
-                facility_enrollment=form.cleaned_data["facility_enrollment"],
-                week=week,
-                quarters=form.cleaned_data["quarters"],
-                start=week.start,
-                end=week.end,
-                name=form.instance.name or f"{faction.name} - {week.name}",
-                description=form.instance.description,
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+        return {
+            "faction": faction,
+            "facility_enrollment": form.cleaned_data["facility_enrollment"],
+            "week": week,
+            "quarters": form.cleaned_data["quarters"],
+            "start": week.start,
+            "end": week.end,
+            "name": form.instance.name or f"{faction.name} - {week.name}",
+            "description": form.instance.description,
+        }
 
     def get_success_url(self):
         return reverse("factions:show", kwargs={"slug": self.object.faction.slug})
@@ -117,33 +112,30 @@ class AttendeeEnrollmentShowView(DetailView):
     context_object_name = "attendee_enrollment"
 
 
-class AttendeeEnrollmentCreateView(CreateView):
+class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeEnrollment
     fields = "__all__"
     template_name = "attendee-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_enrollment_index")
     service_class = SchedulingService
-
-    def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        try:
-            self.object = service.schedule_attendee_enrollment(
-                attendee=form.cleaned_data["attendee"],
-                faction_enrollment=form.cleaned_data["faction_enrollment"],
-                quarters=form.cleaned_data.get("quarters"),
-                role=form.cleaned_data.get("role"),
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+    service_method = "schedule_attendee_enrollment"
 
 
-class AttendeeEnrollmentUpdateView(UpdateView):
+class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeEnrollment
     fields = "__all__"
     template_name = "attendee-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_enrollment_index")
+    service_method = "schedule_attendee_enrollment"
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        return super().form_valid(form)
+
+    def get_service_kwargs(self, form):
+        kwargs = super().get_service_kwargs(form)
+        kwargs["attendee_enrollment"] = self.object
+        return kwargs
 
 
 class AttendeeEnrollmentDeleteView(DeleteView):
@@ -164,34 +156,30 @@ class AttendeeClassEnrollmentShowView(DetailView):
     context_object_name = "attendee_class_enrollment"
 
 
-class AttendeeClassEnrollmentCreateView(CreateView):
+class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeClassEnrollment
     fields = "__all__"
     template_name = "attendee-class-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_class_enrollment_index")
     service_class = SchedulingService
-
-    def form_valid(self, form):
-        service = self.service_class(user=self.request.user)
-        try:
-            self.object = service.assign_attendee_to_class(
-                attendee=form.cleaned_data["attendee"],
-                attendee_enrollment=form.cleaned_data.get("attendee_enrollment"),
-                facility_class_enrollment=form.cleaned_data[
-                    "facility_class_enrollment"
-                ],
-            )
-        except ValidationError as exc:
-            form.add_error(None, format_validation_error(exc))
-            return self.form_invalid(form)
-        return HttpResponseRedirect(self.get_success_url())
+    service_method = "assign_attendee_to_class"
 
 
-class AttendeeClassEnrollmentUpdateView(UpdateView):
+class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeClassEnrollment
     fields = "__all__"
     template_name = "attendee-class-enrollment/form.html"
     success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+    service_method = "assign_attendee_to_class"
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        return super().form_valid(form)
+
+    def get_service_kwargs(self, form):
+        kwargs = super().get_service_kwargs(form)
+        kwargs["attendee_class_enrollment"] = self.object
+        return kwargs
 
 
 class AttendeeClassEnrollmentDeleteView(DeleteView):

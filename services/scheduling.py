@@ -51,13 +51,15 @@ class SchedulingService:
         attendee,
         facility_class_enrollment,
         attendee_enrollment=None,
+        attendee_class_enrollment=None,
     ):
-        self._ensure_class_capacity(facility_class_enrollment)
-        enrollment = AttendeeClassEnrollment(
-            attendee=attendee,
-            attendee_enrollment=attendee_enrollment,
-            facility_class_enrollment=facility_class_enrollment,
+        self._ensure_class_capacity(
+            facility_class_enrollment, exclude=attendee_class_enrollment
         )
+        enrollment = attendee_class_enrollment or AttendeeClassEnrollment()
+        enrollment.attendee = attendee
+        enrollment.attendee_enrollment = attendee_enrollment
+        enrollment.facility_class_enrollment = facility_class_enrollment
         return self._persist(enrollment)
 
     def schedule_attendee_enrollment(
@@ -173,11 +175,18 @@ class SchedulingService:
                 "Selected quarters are already reserved for this week."
             )
 
-    def _ensure_class_capacity(self, facility_class_enrollment):
+    def _ensure_class_capacity(self, facility_class_enrollment, exclude=None):
         availability = FacilityClassAvailability.for_enrollment(
             facility_class_enrollment
         )
-        if availability.remaining <= 0:
+        remaining = availability.remaining
+        if (
+            exclude
+            and getattr(exclude, "facility_class_enrollment_id", None)
+            == facility_class_enrollment.id
+        ):
+            remaining += 1
+        if remaining <= 0:
             raise ValidationError("This class is already at capacity.")
 
     def _ensure_attendee_capacity(
