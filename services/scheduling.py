@@ -9,6 +9,7 @@ from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 from enrollment.models.faction import FactionEnrollment
 from enrollment.models.faculty import FacultyEnrollment
+from enrollment.models.faculty_class import FacultyClassEnrollment as FacultyClassAssignment
 from enrollment.models.leader import LeaderEnrollment
 
 
@@ -60,6 +61,20 @@ class SchedulingService:
         enrollment.attendee = attendee
         enrollment.attendee_enrollment = attendee_enrollment
         enrollment.facility_class_enrollment = facility_class_enrollment
+        return self._persist(enrollment)
+
+    def assign_faculty_to_class(
+        self,
+        *,
+        faculty,
+        facility_class_enrollment,
+        faculty_enrollment=None,
+        assignment=None,
+    ):
+        enrollment = assignment or FacultyClassAssignment()
+        enrollment.faculty = faculty
+        enrollment.facility_class_enrollment = facility_class_enrollment
+        enrollment.faculty_enrollment = faculty_enrollment
         return self._persist(enrollment)
 
     def schedule_attendee_enrollment(

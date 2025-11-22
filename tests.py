@@ -1,4 +1,5 @@
 from datetime import timedelta, time
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -328,6 +329,29 @@ class SchedulingServiceUpdateTests(EnrollmentScenarioBase):
                 attendee=other_attendee,
                 facility_class_enrollment=facility_class_enrollment,
             )
+
+    def test_faculty_class_assignment_updates_instance(self):
+        faculty = self._create_faculty_profile("faculty.class.assign")
+        service = SchedulingService()
+        faculty_enrollment = service.schedule_faculty_enrollment(
+            faculty=faculty,
+            facility_enrollment=self.facility_enrollment,
+            quarters=self.quarters,
+        )
+        class_enrollment = self._build_facility_class_enrollment()
+        with patch.object(SchedulingService, "_persist", side_effect=lambda obj: obj):
+            assignment = service.assign_faculty_to_class(
+                faculty=faculty,
+                facility_class_enrollment=class_enrollment,
+                faculty_enrollment=faculty_enrollment,
+            )
+            updated = service.assign_faculty_to_class(
+                faculty=faculty,
+                facility_class_enrollment=class_enrollment,
+                faculty_enrollment=faculty_enrollment,
+                assignment=assignment,
+            )
+        self.assertEqual(updated.pk, assignment.pk)
 
 
 class SerializerSchedulingTests(EnrollmentScenarioBase):

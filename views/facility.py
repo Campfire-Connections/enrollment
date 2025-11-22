@@ -357,11 +357,13 @@ class FacultyClassEnrollmentShowView(BaseDetailView):
     slug_url_kwarg = "faculty_class_enrollment_slug"
 
 
-class FacultyClassEnrollmentCreateView(BaseCreateView):
+class FacultyClassEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateView):
     model = FacultyClassAssignment
     form_class = FacultyClassAssignmentForm
     template_name = "faculty-class-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:classes:show"
+    service_class = SchedulingService
+    service_method = "assign_faculty_to_class"
 
     def get_success_url(self):
         """
@@ -377,12 +379,23 @@ class FacultyClassEnrollmentCreateView(BaseCreateView):
             },
         )
 
+    def get_service_kwargs(self, form):
+        return {
+            "faculty": form.cleaned_data["faculty"],
+            "facility_class_enrollment": form.cleaned_data[
+                "facility_class_enrollment"
+            ],
+            "faculty_enrollment": form.cleaned_data.get("faculty_enrollment"),
+        }
 
-class FacultyClassEnrollmentUpdateView(BaseUpdateView):
+
+class FacultyClassEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateView):
     model = FacultyClassAssignment
     form_class = FacultyClassAssignmentForm
     template_name = "faculty-class-enrollment/form.html"
     success_url_pattern = "facilities:faculty:enrollments:classes:show"
+    service_class = SchedulingService
+    service_method = "assign_faculty_to_class"
 
     def get_success_url(self):
         """
@@ -397,6 +410,20 @@ class FacultyClassEnrollmentUpdateView(BaseUpdateView):
                 "faculty_class_enrollment_slug": self.get_object(),
             },
         )
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        return super().form_valid(form)
+
+    def get_service_kwargs(self, form):
+        return {
+            "faculty": form.cleaned_data["faculty"],
+            "facility_class_enrollment": form.cleaned_data[
+                "facility_class_enrollment"
+            ],
+            "faculty_enrollment": form.cleaned_data.get("faculty_enrollment"),
+            "assignment": self.object,
+        }
 
 
 class FacultyClassEnrollmentDeleteView(BaseDeleteView):
