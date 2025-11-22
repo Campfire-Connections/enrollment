@@ -1,11 +1,13 @@
 # enrollment/forms/faculty_class.py
 
 from django import forms
-from django.core.exceptions import ValidationError
 
 from core.forms.base import BaseForm
-from user.models import User
-from course.models.facility_class import FacilityClass
+from facility.models.faculty import FacultyProfile
+from enrollment.models.facility_class import (
+    FacilityClassEnrollment as FacilityClassSchedule,
+)
+from enrollment.models.faculty import FacultyEnrollment as FacultyAssignment
 
 from ..models.faculty_class import FacultyClassEnrollment
 
@@ -21,34 +23,31 @@ class FacultyClassEnrollmentForm(BaseForm):
         """
         super().__init__(*args, **kwargs)
 
-        # Dynamically filter the faculty queryset based on the user's facility
-        if self.user and hasattr(self.user, 'facultyprofile'):
-            facility = self.user.facultyprofile.facility
-            self.fields['faculty'].queryset = Faculty.objects.filter(
-                facultyprofile__facility=facility
+        profile = (
+            getattr(self.user, "facultyprofile_profile", None) if self.user else None
+        )
+        facility = getattr(profile, "facility", None)
+
+        if facility:
+            self.fields["faculty"].queryset = FacultyProfile.objects.filter(
+                facility=facility
+            ).select_related("user")
+            self.fields["facility_class_enrollment"].queryset = (
+                FacilityClassSchedule.objects.filter(
+                    facility_class__facility_enrollment__facility=facility
+                )
             )
         else:
-            self.fields['faculty'].queryset = Faculty.objects.none()
+            self.fields["faculty"].queryset = FacultyProfile.objects.none()
+            self.fields["facility_class_enrollment"].queryset = (
+                FacilityClassSchedule.objects.none()
+            )
 
-        # Dynamically filter facility classes based on facility
-        self.fields['facility_class'].queryset = FacilityClass.objects.filter(
-            facility_enrollment__facility=self.user.facultyprofile.facility
-        ) if self.user else FacilityClass.objects.none()
+        if profile:
+            self.fields["faculty_enrollment"].queryset = profile.faculty_enrollments.all()
+        else:
+            self.fields["faculty_enrollment"].queryset = FacultyAssignment.objects.none()
 
         # Add default attributes to the fields
-        self.fields['faculty'].widget.attrs.update({'class': 'form-control'})
-        self.fields['facility_class_enrollment'].widget.attrs.update({'class': 'form-control'})
-        self.fields['faculty_enrollment'].widget.attrs.update({'class': 'form-control'})
-        
-    def clean(self):
-        """
-        Add custom validation logic.
-        """
-        cleaned_data = super().clean()
-        start_date = cleaned_data.get('start_date')
-        end_date = cleaned_data.get('end_date')
-
-        if start_date and end_date and start_date > end_date:
-            raise ValidationError("The start date cannot be later than the end date.")
-
-        return cleaned_data
+        for name in self.fields:
+            self.fields[name].widget.attrs.setdefault("class", "form-control")
