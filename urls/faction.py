@@ -24,6 +24,11 @@ urlpatterns = [
         name="new",
     ),
     path(
+        "new/",
+        FactionEnrollmentCreateView.as_view(),
+        name="new_slash",
+    ),
+    path(
         "<int:enrollment_pk>",
         FactionEnrollmentShowView.as_view(),
         name="show",
