@@ -1,7 +1,6 @@
 # enrollment/views/leader.py
 
 from rest_framework import viewsets
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
 
 from core.views.base import (
@@ -11,6 +10,8 @@ from core.views.base import (
     BaseDetailView,
     BaseUpdateView,
 )
+from core.mixins.views import LoginRequiredMixin
+
 from enrollment.tables.leader import LeaderEnrollmentTable
 from enrollment.models.leader import LeaderEnrollment
 from enrollment.serializers import LeaderEnrollmentSerializer
@@ -23,18 +24,14 @@ class IndexView(BaseTableListView):
     model = LeaderEnrollment
     table_class = LeaderEnrollmentTable
     template_name = "leader-enrollment/list.html"
-
     context_object_name = "leader_enrollments"
     paginate_by = 10
 
     def get_queryset(self):
         queryset = LeaderEnrollment.objects.all()
-
-        # Check if 'leader_slug' is present in the URL
         leader_slug = self.kwargs.get("leader_slug")
         if leader_slug:
             queryset = queryset.filter(leader__slug=leader_slug)
-
         return queryset
 
 
@@ -61,6 +58,7 @@ class CreateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseCreateView)
             },
         )
 
+
 class UpdateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseUpdateView):
     model = LeaderEnrollment
     form_class = LeaderEnrollmentForm
@@ -70,9 +68,6 @@ class UpdateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseUpdateView)
     service_method = "schedule_leader_enrollment"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL with variables.
-        """
         faction_slug = self.object.faction.slug
         return reverse(
             "factions:leaders:enrollments:index",
@@ -98,9 +93,6 @@ class DeleteView(BaseDeleteView):
     action = "Delete"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL with variables.
-        """
         faction_slug = self.object.faction.slug
         return reverse(
             "factions:leaders:enrollments:index",

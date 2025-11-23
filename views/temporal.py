@@ -2,9 +2,7 @@
 
 from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView
-from django_tables2 import MultiTableMixin
+from django.http import JsonResponse
 
 from core.views.base import (
     BaseManageView,
@@ -15,6 +13,7 @@ from core.views.base import (
     BaseUpdateView,
     build_tables_from_config,
 )
+from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
 
 from ..models.temporal import Week, Period
 from ..models.faction import FactionEnrollment
@@ -24,10 +23,8 @@ from ..tables.period import PeriodsByWeekTable, PeriodTable
 from ..tables.faction import FactionEnrollmentTable
 from ..forms.period import PeriodForm
 
-
 from facility.models.quarters import Quarters, QuartersType
 from facility.models.facility import Facility
-from django.http import JsonResponse
 
 
 def load_weeks(request):
@@ -40,39 +37,39 @@ def load_quarters(request):
     week_id = request.GET.get("week")
     facility_enrollment_id = request.GET.get("facility_enrollment")
 
-    # Fetch the facility enrollment and the associated facility
     facility_enrollment = FacilityEnrollment.objects.get(id=facility_enrollment_id)
     facility = facility_enrollment.facility
 
-    # Fetch the QuartersType object that corresponds to 'faction'
     faction_quarters_type = QuartersType.objects.get(slug="faction")
 
-    # Get all quarters of the type 'faction' for the facility
     available_quarters = Quarters.objects.filter(
-        facility=facility, type=faction_quarters_type
+        facility=facility,
+        type=faction_quarters_type,
     )
-    # Find quarters already assigned for this week within the same facility enrollment
+
     used_quarters = FactionEnrollment.objects.filter(
         week_id=week_id,
-        week__facility_enrollment=facility_enrollment,  # Correct relationship through 'week'
+        week__facility_enrollment=facility_enrollment,
     ).values_list("quarters_id", flat=True)
 
-    # Exclude quarters that are already assigned
     available_quarters = available_quarters.exclude(id__in=used_quarters)
 
-    # Return the available quarters as a JSON response
     return JsonResponse(list(available_quarters.values("id", "name")), safe=False)
 
 
-class WeekManageView(BaseManageView):
+class WeekManageView(LoginRequiredMixin, PortalPermissionMixin, BaseManageView):
     template_name = "week/manage.html"
     enrollment = None
     facility = None
     week = None
+    allowed_user_types = ("FACULTY",)
+
+    def test_func(self):
+        # Check if the user is a faculty member with admin privileges
+        return super().test_func() and getattr(self.request.user, "is_admin", False)
 
     def get_tables_config(self):
         week = self.get_week()
-
         return {
             "periods": {
                 "class": PeriodsByWeekTable,
@@ -85,45 +82,6 @@ class WeekManageView(BaseManageView):
                 "paginate_by": 10,
             },
         }
-
-    # def get_context_data(self, **kwargs):
-    #     tables = self.get_tables()
-    #     print("Debug: Table value:", tables, type(tables))
-
-    #     for table in tables:
-    #         print("Debug: Table value:", table, type(table))
-
-    #     context = super().get_context_data(**kwargs)
-    #     facility = self.get_facility()
-    #     enrollment = self.get_enrollment()
-    #     week = self.get_week()
-
-    #     tables_with_names = [
-    #         {
-    #             "table": table,
-    #             "name": table.Meta.model._meta.verbose_name_plural,
-    #             "create_url": table.get_url(
-    #                 "add",
-    #                 context={
-    #                     "facility_slug": facility.slug,
-    #                     "facility_enrollment_slug": enrollment.slug,
-    #                     "week_slug": week.slug,
-    #                 },
-    #             ),
-    #             "icon": getattr(table, "add_icon", None),
-    #         }
-    #         for table in self.get_tables()
-    #     ]
-    #     context.update(
-    #         {
-    #             "tables_with_names": tables_with_names,
-    #             "facility": facility,
-    #             "enrollment": enrollment,
-    #             "week": week,
-    #         }
-    #     )
-
-    #     return context
 
     def get_facility(self):
         if self.facility is None:
@@ -144,10 +102,6 @@ class WeekManageView(BaseManageView):
             week_slug = self.kwargs.get("week_slug")
             self.week = get_object_or_404(Week, slug=week_slug)
         return self.week
-
-    def test_func(self):
-        # Check if the user is a faculty member with admin privileges
-        return self.request.user.user_type == "FACULTY" and self.request.user.is_admin
 
 
 class WeekIndexView(BaseTableListView):
@@ -202,7 +156,6 @@ class WeekDeleteView(BaseDeleteView):
     success_url = reverse_lazy("weeks:index")
 
 
-# Similar views for Period
 class PeriodIndexView(BaseTableListView):
     model = Period
     template_name = "period/index.html"
@@ -243,12 +196,10 @@ class PeriodCreateView(BaseCreateView):
         return kwargs
 
     def get_success_url(self):
-        """Redirect to the manage view for the associated week."""
         week_slug = self.kwargs.get("week_slug")
         return reverse("enrollments:weeks:manage", kwargs={"week_slug": week_slug})
 
     def get_context_data(self, **kwargs):
-        """Add extra context for the template."""
         context = super().get_context_data(**kwargs)
         week_slug = self.kwargs.get("week_slug")
         if week_slug:

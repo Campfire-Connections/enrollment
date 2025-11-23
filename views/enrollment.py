@@ -1,33 +1,34 @@
 # enrollment/views/enrollment.py
 
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-)
 from django.urls import reverse_lazy
+
+from core.views.base import (
+    BaseListView,
+    BaseDetailView,
+    BaseCreateView,
+    BaseUpdateView,
+    BaseDeleteView,
+    BaseTemplateView,
+)
+from core.mixins.views import LoginRequiredMixin
 
 from ..models.enrollment import ActiveEnrollment
 
 
-class ActiveEnrollmentIndexView(ListView):
+class ActiveEnrollmentIndexView(BaseListView):
     model = ActiveEnrollment
     template_name = "active_enrollment/index.html"
     context_object_name = "active_enrollments"
 
 
-class ActiveEnrollmentShowView(DetailView):
+class ActiveEnrollmentShowView(BaseDetailView):
     model = ActiveEnrollment
     template_name = "active_enrollment/show.html"
     context_object_name = "active_enrollment"
 
 
-class ActiveEnrollmentCreateView(CreateView):
+class ActiveEnrollmentCreateView(BaseCreateView):
     model = ActiveEnrollment
     fields = [
         "user",
@@ -41,7 +42,7 @@ class ActiveEnrollmentCreateView(CreateView):
     success_url = reverse_lazy("active_enrollment:index")
 
 
-class ActiveEnrollmentUpdateView(UpdateView):
+class ActiveEnrollmentUpdateView(BaseUpdateView):
     model = ActiveEnrollment
     fields = [
         "user",
@@ -55,13 +56,13 @@ class ActiveEnrollmentUpdateView(UpdateView):
     success_url = reverse_lazy("active_enrollment:index")
 
 
-class ActiveEnrollmentDeleteView(DeleteView):
+class ActiveEnrollmentDeleteView(BaseDeleteView):
     model = ActiveEnrollment
     template_name = "active_enrollment/confirm_delete.html"
     success_url = reverse_lazy("active_enrollment:index")
 
 
-class MyScheduleView(LoginRequiredMixin, TemplateView):
+class MyScheduleView(LoginRequiredMixin, BaseTemplateView):
     template_name = "enrollment/my_schedule.html"
 
     def get_context_data(self, **kwargs):
@@ -70,11 +71,7 @@ class MyScheduleView(LoginRequiredMixin, TemplateView):
         # Fetch the active enrollment for the current user
         active_enrollment = get_object_or_404(ActiveEnrollment, user=self.request.user)
 
-        # Add active enrollment to the context
         context["active_enrollment"] = active_enrollment
-
-        # You can add additional related information like classes, periods, etc.
-        # Example:
         context["attendee_enrollment"] = active_enrollment.attendee_enrollment
         context["leader_enrollment"] = active_enrollment.leader_enrollment
         context["faction_enrollment"] = active_enrollment.faction_enrollment

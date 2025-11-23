@@ -11,34 +11,56 @@ from core.views.base import (
     BaseTableListView,
     BaseUpdateView,
 )
+from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
+
 from facility.models.facility import Facility
 from facility.tables.faculty import FacultyTable
 from facility.models.faculty import FacultyProfile
 
 from ..models.facility import FacilityEnrollment
 from ..models.faculty import FacultyEnrollment
-from ..models.facility_class import FacilityClassEnrollment as FacilityClassEnrollmentRecord
-from ..models.faculty_class import FacultyClassEnrollment as FacultyClassAssignment
+from ..models.facility_class import (
+    FacilityClassEnrollment as FacilityClassEnrollmentRecord,
+)
+from ..models.faculty_class import (
+    FacultyClassEnrollment as FacultyClassAssignment,
+)
 from ..forms.facility import FacilityEnrollmentForm
 from ..forms.facility_class import FacilityClassEnrollmentForm
 from ..forms.faculty import FacultyEnrollmentForm
-from ..forms.faculty_class import FacultyClassEnrollmentForm as FacultyClassAssignmentForm
+from ..forms.faculty_class import (
+    FacultyClassEnrollmentForm as FacultyClassAssignmentForm,
+)
 from ..models.temporal import Week
 from ..tables.week import WeekTable
 from ..tables.facility import FacilityEnrollmentTable
 from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable
-from ..tables.faculty_class import FacultyClassEnrollmentTable as FacultyClassAssignmentTable
+from ..tables.faculty_class import (
+    FacultyClassEnrollmentTable as FacultyClassAssignmentTable,
+)
 from ..services import SchedulingService
 from ..mixin import SchedulingServiceFormMixin
 
 
-class FacilityEnrollmentManageView(BaseManageView):
+class FacilityEnrollmentManageView(LoginRequiredMixin, PortalPermissionMixin, BaseManageView):
+    """
+    Manage a single FacilityEnrollment (weeks + faculty) – restricted to faculty admins.
+    """
+
     template_name = "facility/manage.html"
+    allowed_user_types = ("FACULTY",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enrollment = None
+        self.facility = None
+
+    def test_func(self):
+        return super().test_func() and getattr(self.request.user, "is_admin", False)
 
     def get_tables_config(self):
         enrollment = self.get_enrollment()
-
         return {
             "weeks": {
                 "class": WeekTable,
@@ -49,18 +71,9 @@ class FacilityEnrollmentManageView(BaseManageView):
                 "class": FacultyTable,
                 "queryset": FacultyProfile.objects.filter(
                     faculty_enrollments__facility_enrollment=enrollment,
-                )
-                .select_related("user")
-                #.prefetch_related("facultyenrollment_set"),
-                # "queryset": User.faculty_manager.for_facility_enrollment(enrollment),
+                ).select_related("user"),
             },
         }
-
-    def test_func(self):
-        """
-        Check if the user is a faculty member with admin privileges.
-        """
-        return self.request.user.user_type == "FACULTY" and self.request.user.is_admin
 
     def get_create_url(self, table):
         facility = self.get_facility()
@@ -83,14 +96,10 @@ class FacilityEnrollmentManageView(BaseManageView):
         if self.enrollment is None:
             enrollment_slug = self.kwargs.get("facility_enrollment_slug")
             self.enrollment = get_object_or_404(
-                FacilityEnrollment.objects.with_schedule(), slug=enrollment_slug
+                FacilityEnrollment.objects.with_schedule(),
+                slug=enrollment_slug,
             )
-
         return self.enrollment
-
-    def __init__(self):
-        self.enrollment = None
-        self.facility = None
 
 
 class FacilityEnrollmentIndexView(BaseTableListView):
@@ -130,9 +139,6 @@ class FacilityEnrollmentCreateView(BaseCreateView):
     success_url_pattern = "facilities:enrollments:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={"facility_slug": self.kwargs.get("facility_slug")},
@@ -146,9 +152,6 @@ class FacilityEnrollmentUpdateView(BaseUpdateView):
     success_url_pattern = "facilities:enrollments:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={"facility_slug": self.kwargs.get("facility_slug")},
@@ -161,9 +164,6 @@ class FacilityEnrollmentDeleteView(BaseDeleteView):
     success_url_pattern = "facilities:enrollments:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={"facility_slug": self.kwargs.get("facility_slug")},
@@ -204,14 +204,13 @@ class FacilityClassEnrollmentCreateView(BaseCreateView):
         return kwargs
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
-                "facility_enrollment_slug": self.kwargs.get("facility_enrollment_slug"),
+                "facility_enrollment_slug": self.kwargs.get(
+                    "facility_enrollment_slug"
+                ),
             },
         )
 
@@ -235,14 +234,13 @@ class FacilityClassEnrollmentUpdateView(BaseUpdateView):
         return kwargs
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
-                "facility_enrollment_slug": self.kwargs.get("facility_enrollment_slug"),
+                "facility_enrollment_slug": self.kwargs.get(
+                    "facility_enrollment_slug"
+                ),
             },
         )
 
@@ -253,19 +251,15 @@ class FacilityClassEnrollmentDeleteView(BaseDeleteView):
     success_url_pattern = "facilities:enrollments:classes:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
-                "facility_enrollment_slug": self.kwargs.get("facility_enrollment_slug"),
+                "facility_enrollment_slug": self.kwargs.get(
+                    "facility_enrollment_slug"
+                ),
             },
         )
-
-
-# Faculty Enrollment
 
 
 class FacultyEnrollmentIndexView(BaseTableListView):
@@ -292,9 +286,6 @@ class FacultyEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateView):
     service_method = "schedule_faculty_enrollment"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
@@ -321,9 +312,6 @@ class FacultyEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateView):
     service_method = "schedule_faculty_enrollment"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
@@ -345,15 +333,13 @@ class FacultyEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateView):
             "instance": self.object,
         }
 
+
 class FacultyEnrollmentDeleteView(BaseDeleteView):
     model = FacultyEnrollment
     template_name = "faculty-enrollment/confirm_delete.html"
     success_url_pattern = "facilities:faculty:enrollments:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
@@ -361,9 +347,6 @@ class FacultyEnrollmentDeleteView(BaseDeleteView):
                 "faculty_slug": self.kwargs.get("faculty_slug"),
             },
         )
-
-
-# Faculty Class Enrollment
 
 
 class FacultyClassEnrollmentIndexView(BaseTableListView):
@@ -402,16 +385,15 @@ class FacultyClassEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateVie
         return kwargs
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
                 "faculty_slug": self.kwargs.get("faculty_slug"),
-                "faculty_enrollment_slug": self.kwargs.get("faculty_enrollment_slug"),
-                "faculty_class_enrollment_slug": self.get_object(),
+                "faculty_enrollment_slug": self.kwargs.get(
+                    "faculty_enrollment_slug"
+                ),
+                "faculty_class_enrollment_slug": self.object.slug,
             },
         )
 
@@ -446,16 +428,15 @@ class FacultyClassEnrollmentUpdateView(SchedulingServiceFormMixin, BaseUpdateVie
         return kwargs
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
                 "faculty_slug": self.kwargs.get("faculty_slug"),
-                "faculty_enrollment_slug": self.kwargs.get("faculty_enrollment_slug"),
-                "faculty_class_enrollment_slug": self.get_object(),
+                "faculty_enrollment_slug": self.kwargs.get(
+                    "faculty_enrollment_slug"
+                ),
+                "faculty_class_enrollment_slug": self.object.slug,
             },
         )
 
@@ -480,14 +461,13 @@ class FacultyClassEnrollmentDeleteView(BaseDeleteView):
     success_url_pattern = "facilities:faculty:enrollments:classes:index"
 
     def get_success_url(self):
-        """
-        Dynamically generate the success URL using the facility_slug from kwargs.
-        """
         return reverse(
             self.success_url_pattern,
             kwargs={
                 "facility_slug": self.kwargs.get("facility_slug"),
                 "faculty_slug": self.kwargs.get("faculty_slug"),
-                "faculty_enrollment_slug": self.kwargs.get("faculty_enrollment_slug"),
+                "faculty_enrollment_slug": self.kwargs.get(
+                    "faculty_enrollment_slug"
+                ),
             },
         )
