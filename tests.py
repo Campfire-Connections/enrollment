@@ -30,6 +30,10 @@ from enrollment.serializers import (
 )
 from enrollment.services import SchedulingService
 from enrollment.views.leader import LeaderEnrollmenyViewSet
+from enrollment.views.facility import FacilityEnrollmentManageView
+from enrollment.views.facility_class import ManageView as FacilityClassManageView
+from enrollment.views.temporal import WeekManageView
+from core.utils import is_faculty_admin
 
 User = get_user_model()
 
@@ -84,6 +88,86 @@ class EnrollmentScenarioBase(BaseDomainTestCase):
             organization_enrollment=self.org_enrollment,
             max_enrollment=max_enrollment,
         )
+
+
+class FacultyPermissionTests(BaseDomainTestCase):
+    def setUp(self):
+        super().setUp()
+        self.factory = APIRequestFactory()
+        with mute_profile_signals():
+            self.admin_user = User.objects.create_user(
+                username="faculty.admin",
+                password="pass12345",
+                user_type=User.UserType.FACULTY,
+            )
+            self.staff_user = User.objects.create_user(
+                username="faculty.staff",
+                password="pass12345",
+                user_type=User.UserType.FACULTY,
+            )
+        self.admin_profile = FacultyProfile.objects.create(
+            user=self.admin_user,
+            organization=self.organization,
+            facility=self.facility,
+            role=FacultyProfile.FacultyRole.ADMIN,
+        )
+        self.staff_profile = FacultyProfile.objects.create(
+            user=self.staff_user,
+            organization=self.organization,
+            facility=self.facility,
+            role=FacultyProfile.FacultyRole.STAFF,
+        )
+        self.week = Week.objects.create(
+            name="Week Test",
+            start=self.facility_enrollment.start,
+            end=self.facility_enrollment.end,
+            facility_enrollment=self.facility_enrollment,
+        )
+
+    def test_is_faculty_admin_helper(self):
+        self.assertTrue(is_faculty_admin(self.admin_user))
+        self.assertFalse(is_faculty_admin(self.staff_user))
+
+    def test_facility_enrollment_manage_requires_admin(self):
+        request = self.factory.get("/enrollment/facility/manage/")
+        view = FacilityEnrollmentManageView()
+
+        request.user = self.admin_user
+        view.request = request
+        self.assertTrue(view.test_func())
+
+        request.user = self.staff_user
+        view.request = request
+        self.assertFalse(view.test_func())
+
+    def test_facility_class_manage_requires_admin(self):
+        request = self.factory.get("/enrollment/facility_class/manage/")
+        view = FacilityClassManageView()
+
+        request.user = self.admin_user
+        view.request = request
+        self.assertTrue(view.test_func())
+
+        request.user = self.staff_user
+        view.request = request
+        self.assertFalse(view.test_func())
+
+    def test_week_manage_requires_admin(self):
+        request = self.factory.get("/enrollment/week/manage/")
+        view = WeekManageView()
+        view.kwargs = {
+            "facility_slug": self.facility.slug,
+            "facility_enrollment_slug": self.facility_enrollment.slug,
+            "week_slug": self.week.slug,
+        }
+
+        request.user = self.admin_user
+        view.request = request
+        self.assertTrue(view.test_func())
+
+        request.user = self.staff_user
+        view.request = request
+        self.assertFalse(view.test_func())
 
     def _create_attendee_profile(self, username):
         with mute_profile_signals():
