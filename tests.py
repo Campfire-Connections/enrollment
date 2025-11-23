@@ -63,6 +63,61 @@ class EnrollmentScenarioBase(BaseDomainTestCase):
             facility=self.facility,
         )
 
+    def _create_attendee_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.ATTENDEE,
+            )
+        return AttendeeProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            faction=self.faction,
+        )
+
+    def _create_faction_enrollment(self, name, quarters=None, week=None):
+        week = week or self.week
+        quarters = quarters or self.quarters
+        return FactionEnrollment.objects.create(
+            facility_enrollment=self.facility_enrollment,
+            start=week.start,
+            end=week.end,
+            faction=self.faction,
+            week=week,
+            quarters=quarters,
+            name=name,
+        )
+
+    def _create_faculty_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.FACULTY,
+            )
+        return FacultyProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            facility=self.facility,
+        )
+
+    def _create_leader_profile(self, username):
+        with mute_profile_signals():
+            user = User.objects.create_user(
+                username=username,
+                password="pass12345",
+                user_type=User.UserType.LEADER,
+            )
+        return LeaderProfile.objects.create(
+            user=user,
+            organization=self.organization,
+            faction=self.faction,
+        )
+
+    # Helper aliases preserved for backward compatibility in tests
+    # (defined on EnrollmentScenarioBase)
+
     def _build_facility_class_enrollment(self, max_enrollment=10):
         department = Department.objects.create(
             name="Program",
@@ -90,7 +145,7 @@ class EnrollmentScenarioBase(BaseDomainTestCase):
         )
 
 
-class FacultyPermissionTests(BaseDomainTestCase):
+class FacultyPermissionTests(EnrollmentScenarioBase):
     def setUp(self):
         super().setUp()
         self.factory = APIRequestFactory()
@@ -594,56 +649,4 @@ class LeaderEnrollmentViewSetTests(EnrollmentScenarioBase):
             department=department,
             organization_enrollment=self.org_enrollment,
             max_enrollment=max_enrollment,
-        )
-
-    def _create_attendee_profile(self, username):
-        with mute_profile_signals():
-            user = User.objects.create_user(
-                username=username,
-                password="pass12345",
-                user_type=User.UserType.ATTENDEE,
-            )
-        return AttendeeProfile.objects.create(
-            user=user,
-            organization=self.organization,
-            faction=self.faction,
-        )
-
-    def _create_faction_enrollment(self, name, quarters=None, week=None):
-        week = week or self.week
-        quarters = quarters or self.quarters
-        return FactionEnrollment.objects.create(
-            facility_enrollment=self.facility_enrollment,
-            start=week.start,
-            end=week.end,
-            faction=self.faction,
-            week=week,
-            quarters=quarters,
-            name=name,
-        )
-
-    def _create_faculty_profile(self, username):
-        with mute_profile_signals():
-            user = User.objects.create_user(
-                username=username,
-                password="pass12345",
-                user_type=User.UserType.FACULTY,
-            )
-        return FacultyProfile.objects.create(
-            user=user,
-            organization=self.organization,
-            facility=self.facility,
-        )
-
-    def _create_leader_profile(self, username):
-        with mute_profile_signals():
-            user = User.objects.create_user(
-                username=username,
-                password="pass12345",
-                user_type=User.UserType.LEADER,
-            )
-        return LeaderProfile.objects.create(
-            user=user,
-            organization=self.organization,
-            faction=self.faction,
         )
