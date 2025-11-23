@@ -8,8 +8,8 @@ from core.mixins.views import LoginRequiredMixin, UserPassesTestMixin
 from core.utils import is_faculty_admin
 
 from course.models.facility_class import FacilityClass
+from course.forms.facility_class import FacilityClassForm
 from ..models.facility import FacilityEnrollment
-from ..forms.facility_class import FacilityClassForm
 
 
 class ManageView(LoginRequiredMixin, UserPassesTestMixin, BaseManageView):
