@@ -74,7 +74,8 @@ class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
         return context
 
     def _get_faction(self):
-        return get_object_or_404(Faction, slug=self.kwargs.get("slug"))
+        slug = self.kwargs.get("faction_slug") or self.kwargs.get("slug")
+        return get_object_or_404(Faction, slug=slug)
 
     def get_service_kwargs(self, form):
         faction = self._get_faction()
@@ -91,7 +92,9 @@ class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
         }
 
     def get_success_url(self):
-        return reverse("factions:show", kwargs={"slug": self.object.faction.slug})
+        return reverse(
+            "factions:show", kwargs={"faction_slug": self.object.faction.slug}
+        )
 
 class FactionEnrollmentUpdateView(UpdateView):
     model = FactionEnrollment

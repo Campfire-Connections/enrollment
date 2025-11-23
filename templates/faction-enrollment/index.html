@@ -2,6 +2,12 @@
 
 {% block title_text %}Faction Enrollments{% endblock %}
 
+{% block stylesheets_local %}
+    {{ block.super }}
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/table.css' %}">
+{% endblock stylesheets_local %}
+
 {% block content %}
 <div class="bodyHeader clearfix d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
     <h1 class="mb-0">Faction Enrollments</h1>
