@@ -29,17 +29,25 @@ class FactionEnrollmentIndexView(SingleTableMixin, ListView):
     table_class = FactionEnrollmentTable
     template_name = "faction-enrollment/index.html"
     context_object_name = "faction_enrollments"
+    faction = None
 
     def get_queryset(self):
         qs = FactionEnrollment.objects.with_related()
         slug = self.kwargs.get("faction_slug") or self.kwargs.get("slug")
         if slug:
-            qs = qs.filter(faction__slug=slug)
+            self.faction = get_object_or_404(Faction, slug=slug)
+            qs = qs.filter(faction=self.faction)
         else:
             profile = getattr(self.request.user, "leaderprofile_profile", None)
             if profile and profile.faction_id:
-                qs = qs.filter(faction_id=profile.faction_id)
+                self.faction = profile.faction
+                qs = qs.filter(faction=self.faction)
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["faction"] = self.faction
+        return context
 
 
 class FactionEnrollmentShowView(DetailView):

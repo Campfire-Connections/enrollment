@@ -5,6 +5,11 @@
 {% block content %}
 <div class="bodyHeader clearfix d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
     <h1 class="mb-0">Faction Enrollments</h1>
+    {% if faction %}
+        <a class="btn btn-primary" href="{% url 'factions:enrollments:new' faction_slug=faction.slug %}">
+            <i class="fas fa-plus"></i> Add Enrollment
+        </a>
+    {% endif %}
 </div>
 
 <div class="card">
