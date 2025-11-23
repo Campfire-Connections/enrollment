@@ -20,10 +20,13 @@ from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
 from ..services import SchedulingService
 from ..mixin import SchedulingServiceFormMixin
+from ..tables.faction import FactionEnrollmentTable
+from django_tables2 import SingleTableMixin
 
 
-class FactionEnrollmentIndexView(ListView):
+class FactionEnrollmentIndexView(SingleTableMixin, ListView):
     model = FactionEnrollment
+    table_class = FactionEnrollmentTable
     template_name = "faction-enrollment/index.html"
     context_object_name = "faction_enrollments"
 

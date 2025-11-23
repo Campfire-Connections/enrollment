@@ -9,39 +9,12 @@
 
 <div class="card">
     <div class="card-body">
-        {% if faction_enrollments %}
-            <div class="table-responsive">
-                <table class="table table-striped table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Faction</th>
-                            <th>Week</th>
-                            <th>Quarters</th>
-                            <th>Dates</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for enrollment in faction_enrollments %}
-                            <tr>
-                                <td>{{ enrollment.name }}</td>
-                                <td>{{ enrollment.faction.name }}</td>
-                                <td>{{ enrollment.week.name }}</td>
-                                <td>{{ enrollment.quarters.name }}</td>
-                                <td>{{ enrollment.start }} - {{ enrollment.end }}</td>
-                                <td>
-                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'factions:enrollments:show' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">View</a>
-                                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'factions:enrollments:edit' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">Edit</a>
-                                    <a class="btn btn-sm btn-outline-danger" href="{% url 'factions:enrollments:delete' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">Delete</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        {% if table %}
+            {% load django_tables2 %}
+            {% render_table table %}
         {% else %}
             <p class="mb-0">No enrollments found.</p>
         {% endif %}
     </div>
+</div>
 {% endblock %}

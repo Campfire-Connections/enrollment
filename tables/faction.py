@@ -6,6 +6,7 @@ from ..models.faction import FactionEnrollment
 
 
 class FactionEnrollmentTable(BaseTable):
+    available_actions = ["show", "edit", "delete"]
     facility = tables.Column(
         accessor="week__facility_enrollment__facility", verbose_name="Facility"
     )
