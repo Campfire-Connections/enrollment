@@ -6,6 +6,8 @@ from ..models.faction import FactionEnrollment
 
 
 class FactionEnrollmentTable(BaseTable):
+    add_icon = "fa-plus"
+    add_title = "Add Faction Enrollment"
     available_actions = ["show", "edit", "delete"]
     facility = tables.Column(
         accessor="week__facility_enrollment__facility", verbose_name="Facility"
