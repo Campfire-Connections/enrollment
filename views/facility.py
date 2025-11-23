@@ -12,6 +12,7 @@ from core.views.base import (
     BaseUpdateView,
 )
 from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
+from core.utils import is_faculty_admin, is_department_admin
 
 from facility.models.facility import Facility
 from facility.tables.faculty import FacultyTable
@@ -57,7 +58,8 @@ class FacilityEnrollmentManageView(LoginRequiredMixin, PortalPermissionMixin, Ba
         self.facility = None
 
     def test_func(self):
-        return super().test_func() and getattr(self.request.user, "is_admin", False)
+        user = self.request.user
+        return super().test_func() and is_faculty_admin(user)
 
     def get_tables_config(self):
         enrollment = self.get_enrollment()

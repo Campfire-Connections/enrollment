@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 
 from core.views.base import BaseManageView
 from core.mixins.views import LoginRequiredMixin, UserPassesTestMixin
+from core.utils import is_faculty_admin
 
 from course.models.facility_class import FacilityClass
 from ..models.facility import FacilityEnrollment
@@ -20,10 +21,7 @@ class ManageView(LoginRequiredMixin, UserPassesTestMixin, BaseManageView):
 
     def test_func(self):
         # Ensure the user is a faculty admin
-        return (
-            getattr(self.request.user, "user_type", None) == "FACULTY"
-            and getattr(self.request.user, "is_admin", False)
-        )
+        return is_faculty_admin(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -14,6 +14,7 @@ from core.views.base import (
     build_tables_from_config,
 )
 from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
+from core.utils import is_faculty_admin
 
 from ..models.temporal import Week, Period
 from ..models.faction import FactionEnrollment
@@ -66,7 +67,7 @@ class WeekManageView(LoginRequiredMixin, PortalPermissionMixin, BaseManageView):
 
     def test_func(self):
         # Check if the user is a faculty member with admin privileges
-        return super().test_func() and getattr(self.request.user, "is_admin", False)
+        return super().test_func() and is_faculty_admin(self.request.user)
 
     def get_tables_config(self):
         week = self.get_week()
