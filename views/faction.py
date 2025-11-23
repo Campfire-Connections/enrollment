@@ -28,7 +28,15 @@ class FactionEnrollmentIndexView(ListView):
     context_object_name = "faction_enrollments"
 
     def get_queryset(self):
-        return FactionEnrollment.objects.with_related()
+        qs = FactionEnrollment.objects.with_related()
+        slug = self.kwargs.get("slug")
+        if slug:
+            qs = qs.filter(faction__slug=slug)
+        else:
+            profile = getattr(self.request.user, "leaderprofile_profile", None)
+            if profile and profile.faction_id:
+                qs = qs.filter(faction_id=profile.faction_id)
+        return qs
 
 
 class FactionEnrollmentShowView(DetailView):
