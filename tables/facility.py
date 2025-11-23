@@ -22,7 +22,7 @@ class FacilityEnrollmentTable(OrganizationLabelMixin, BaseTable):
     url_namespace = "facilities:enrollments"
 
     urls = {
-        "add": {"kwargs": {"facility_slug": "facility__slug"}},
+        "add": {"kwargs": {"facility_slug": "facility_slug"}},
         "show": {
             "kwargs": {
                 "facility_slug": "facility__slug",
