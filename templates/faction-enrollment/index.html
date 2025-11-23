@@ -19,6 +19,7 @@
                             <th>Week</th>
                             <th>Quarters</th>
                             <th>Dates</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -29,6 +30,11 @@
                                 <td>{{ enrollment.week.name }}</td>
                                 <td>{{ enrollment.quarters.name }}</td>
                                 <td>{{ enrollment.start }} - {{ enrollment.end }}</td>
+                                <td>
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'factions:enrollments:show' enrollment_pk=enrollment.pk %}">View</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'factions:enrollments:edit' enrollment_pk=enrollment.pk %}">Edit</a>
+                                    <a class="btn btn-sm btn-outline-danger" href="{% url 'factions:enrollments:delete' enrollment_pk=enrollment.pk %}">Delete</a>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
