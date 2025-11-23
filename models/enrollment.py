@@ -9,6 +9,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 
 from core.mixins import models as mixins
+from .leader import LeaderEnrollment
+from .attendee import AttendeeEnrollment
+from .faculty import FacultyEnrollment
+from .faction import FactionEnrollment
+from .facility import FacilityEnrollment
 
 # from core.mixins import settings as stgs
 
@@ -31,42 +36,47 @@ class ActiveEnrollment(models.Model):
         verbose_name="User",
     )
     attendee_enrollment = models.ForeignKey(
-        "AttendeeEnrollment",
+        AttendeeEnrollment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         related_name="active_attendee_enrollments",
         verbose_name="Attendee Enrollment",
     )
     leader_enrollment = models.ForeignKey(
-        "LeaderEnrollment",
+        LeaderEnrollment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         related_name="active_leader_enrollments",
         verbose_name="Leader Enrollment",
     )
     faction_enrollment = models.ForeignKey(
-        "FactionEnrollment",
+        FactionEnrollment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         related_name="active_faction_enrollments",
         verbose_name="Faction Enrollment",
     )
     faculty_enrollment = models.ForeignKey(
-        "FacultyEnrollment",
+        FacultyEnrollment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         related_name="active_faculty_enrollments",
         verbose_name="Faculty Enrollment",
     )
     facility_enrollment = models.ForeignKey(
-        "FacilityEnrollment",
+        FacilityEnrollment,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        default=None,
         related_name="active_facility_enrollments",
         verbose_name="Facility Enrollment",
     )
