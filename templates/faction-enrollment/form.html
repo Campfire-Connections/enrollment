@@ -68,45 +68,54 @@
 </section>
 
 <script>
-// Load weeks based on selected facility enrollment
-$("#id_facility_enrollment").change(function() {
-    var facilityEnrollmentId = $(this).val();
-    $.ajax({
-    url: "{% url 'ajax_load_weeks' %}",
-    data: {
-        'facility_enrollment': facilityEnrollmentId
-    },
-    success: function(data) {
-        $("#id_week").html('<option value="">Select Week</option>');
-        data.forEach(function(week) {
-        $("#id_week").append(
-            `<option value="${week.id}">${week.name}</option>`
-        );
+(function() {
+    const weekSelect = document.getElementById("id_week");
+    const quartersSelect = document.getElementById("id_quarters");
+    const facilitySelect = document.getElementById("id_facility_enrollment");
+
+    function resetSelect(selectEl, placeholder) {
+        if (!selectEl) return;
+        selectEl.innerHTML = "";
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = placeholder;
+        selectEl.appendChild(opt);
+    }
+
+    async function loadWeeks(facilityEnrollmentId) {
+        resetSelect(weekSelect, "Select Week");
+        resetSelect(quartersSelect, "Select Quarters");
+        if (!facilityEnrollmentId) return;
+        const resp = await fetch(`{% url 'ajax_load_weeks' %}?facility_enrollment=${facilityEnrollmentId}`);
+        const data = await resp.json();
+        data.forEach((week) => {
+            const opt = document.createElement("option");
+            opt.value = week.id;
+            opt.textContent = week.name;
+            weekSelect.appendChild(opt);
         });
     }
-    });
-});
 
-// Load quarters based on selected facility enrollment and week
-$("#id_week").change(function() {
-    var facilityEnrollmentId = $("#id_facility_enrollment").val();
-    var weekId = $(this).val();
-
-    $.ajax({
-        url: "{% url 'ajax_load_quarters' %}",
-        data: {
-        'facility_enrollment': facilityEnrollmentId,
-        'week': weekId
-        },
-        success: function(data) {
-        $("#id_quarters").html('<option value="">Select Quarters</option>');
-        data.forEach(function(quarter) {
-            $("#id_quarters").append(
-            `<option value="${quarter.id}">${quarter.name}</option>`
-            );
+    async function loadQuarters(facilityEnrollmentId, weekId) {
+        resetSelect(quartersSelect, "Select Quarters");
+        if (!facilityEnrollmentId || !weekId) return;
+        const resp = await fetch(`{% url 'ajax_load_quarters' %}?facility_enrollment=${facilityEnrollmentId}&week=${weekId}`);
+        const data = await resp.json();
+        data.forEach((quarter) => {
+            const opt = document.createElement("option");
+            opt.value = quarter.id;
+            opt.textContent = quarter.name;
+            quartersSelect.appendChild(opt);
         });
-        }
+    }
+
+    facilitySelect?.addEventListener("change", (e) => {
+        loadWeeks(e.target.value);
     });
-});
+
+    weekSelect?.addEventListener("change", (e) => {
+        loadQuarters(facilitySelect?.value, e.target.value);
+    });
+})();
 </script>
 {% endblock %}
