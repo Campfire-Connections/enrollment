@@ -31,9 +31,9 @@
                                 <td>{{ enrollment.quarters.name }}</td>
                                 <td>{{ enrollment.start }} - {{ enrollment.end }}</td>
                                 <td>
-                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'factions:enrollments:show' enrollment_pk=enrollment.pk %}">View</a>
-                                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'factions:enrollments:edit' enrollment_pk=enrollment.pk %}">Edit</a>
-                                    <a class="btn btn-sm btn-outline-danger" href="{% url 'factions:enrollments:delete' enrollment_pk=enrollment.pk %}">Delete</a>
+                                    <a class="btn btn-sm btn-outline-primary" href="{% url 'factions:enrollments:show' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">View</a>
+                                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'factions:enrollments:edit' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">Edit</a>
+                                    <a class="btn btn-sm btn-outline-danger" href="{% url 'factions:enrollments:delete' slug=enrollment.faction.slug enrollment_pk=enrollment.pk %}">Delete</a>
                                 </td>
                             </tr>
                         {% endfor %}
