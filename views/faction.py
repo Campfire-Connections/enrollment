@@ -32,7 +32,7 @@ class FactionEnrollmentIndexView(SingleTableMixin, ListView):
 
     def get_queryset(self):
         qs = FactionEnrollment.objects.with_related()
-        slug = self.kwargs.get("slug")
+        slug = self.kwargs.get("faction_slug") or self.kwargs.get("slug")
         if slug:
             qs = qs.filter(faction__slug=slug)
         else:

@@ -25,19 +25,19 @@ class FactionEnrollmentTable(BaseTable):
     urls = {
         "add": {
             "name": "factions:enrollments:new",
-            "kwargs": {"slug": "faction__slug"},
+            "kwargs": {"faction_slug": "faction__slug"},
         },
         "show": {
             "name": "factions:enrollments:show",
-            "kwargs": {"slug": "faction__slug", "enrollment_slug": "slug"},
+            "kwargs": {"faction_slug": "faction__slug", "enrollment_slug": "slug"},
         },
         "edit": {
             "name": "factions:enrollments:edit",
-            "kwargs": {"slug": "faction__slug", "enrollment_slug": "slug"},
+            "kwargs": {"faction_slug": "faction__slug", "enrollment_slug": "slug"},
         },
         "delete": {
             "name": "factions:enrollments:delete",
-            "kwargs": {"slug": "faction__slug", "enrollment_slug": "slug"},
+            "kwargs": {"faction_slug": "faction__slug", "enrollment_slug": "slug"},
         },
     }
 
