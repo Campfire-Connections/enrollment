@@ -7,12 +7,12 @@ from enrollment.models.leader import LeaderEnrollment
 
 
 class LeaderEnrollmentTable(BaseTable):
-    leader = tables.Column(accessor="faction.LeaderProfile", verbose_name="Leader")
+    leader = tables.Column(accessor="leader__name", verbose_name="Leader")
     faction_enrollment = tables.Column(
-        accessor="faction_enrollment.name",
+        accessor="faction_enrollment__name",
         verbose_name="Faction Enrollment",
     )
-    quarters = tables.Column(accessor="quarters.name", verbose_name="Quarters")
+    quarters = tables.Column(accessor="quarters__name", verbose_name="Quarters")
     role = tables.Column(accessor="role", verbose_name="Role")
 
     class Meta:

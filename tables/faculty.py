@@ -28,11 +28,11 @@ class FacultyEnrollmentTable(OrganizationLabelMixin, BaseTable):
         Available Actions: Show, Edit, Delete
     """
 
-    faculty = tables.Column(accessor="faculty.name", verbose_name="Faculty")
+    faculty = tables.Column(accessor="faculty__name", verbose_name="Faculty")
     facility_enrollment = tables.Column(
-        accessor="facility_enrollment.name", verbose_name="Facility Enrollment"
+        accessor="facility_enrollment__name", verbose_name="Facility Enrollment"
     )
-    quarters = tables.Column(accessor="quarters.name", verbose_name="Faculty Quarters")
+    quarters = tables.Column(accessor="quarters__name", verbose_name="Faculty Quarters")
     start_date = tables.DateTimeColumn(format="M d, Y", verbose_name="Start Date")
     end_date = tables.DateTimeColumn(format="M d, Y", verbose_name="End Date")
 
@@ -86,8 +86,8 @@ class FacultyEnrollmentByFacilityEnrollmentTable(FacultyEnrollmentTable):
         FacultyEnrollmentTable: The base table for faculty enrollment-related information.
     """
 
-    last_name = tables.Column(accessor="faculty.user.last_name", verbose_name="Last Name")
-    first_name = tables.Column(accessor="faculty.user.first_name", verbose_name="First Name")
+    last_name = tables.Column(accessor="faculty__user__last_name", verbose_name="Last Name")
+    first_name = tables.Column(accessor="faculty__user__first_name", verbose_name="First Name")
     faculty = None
 
     class Meta(FacultyEnrollmentTable.Meta):

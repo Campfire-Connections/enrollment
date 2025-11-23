@@ -27,7 +27,7 @@ class WeekTable(BaseTable):
     start = tables.DateTimeColumn(format="M d", verbose_name="Start Date")
     end = tables.DateTimeColumn(format="M d", verbose_name="End Date")
     facility_enrollment = tables.Column(
-        accessor="facility_enrollment.name", verbose_name="Facility Enrollment"
+        accessor="facility_enrollment__name", verbose_name="Facility Enrollment"
     )
 
     class Meta:

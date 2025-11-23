@@ -8,14 +8,14 @@ from enrollment.models.faculty import FacultyEnrollment
 
 
 class FacultyClassEnrollmentTable(OrganizationLabelMixin, BaseTable):
-    faculty = tables.Column(accessor="faculty.name", verbose_name="Faculty")
+    faculty = tables.Column(accessor="faculty__name", verbose_name="Faculty")
     facility_class = tables.Column(
-        accessor="facility_class.name", verbose_name="Facility Class"
+        accessor="facility_class__name", verbose_name="Facility Class"
     )
-    period = tables.Column(accessor="period.name", verbose_name="Period")
-    department = tables.Column(accessor="department.name", verbose_name="Department")
+    period = tables.Column(accessor="period__name", verbose_name="Period")
+    department = tables.Column(accessor="department__name", verbose_name="Department")
     organization_enrollment = tables.Column(
-        accessor="organization_enrollment.name", verbose_name="Organization Enrollment"
+        accessor="organization_enrollment__name", verbose_name="Organization Enrollment"
     )
     max_enrollment = tables.Column(verbose_name="Max Enrollment")
 
@@ -62,16 +62,16 @@ class FacultyClassEnrollmentTable(OrganizationLabelMixin, BaseTable):
 
 class ClassScheduleTable(BaseTable):
     session = tables.Column(
-        accessor="facility_enrollment.name", verbose_name="Session"
+        accessor="facility_enrollment__name", verbose_name="Session"
     )
     facility = tables.Column(
-        accessor="facility_enrollment.facility.name", verbose_name="Facility"
+        accessor="facility_enrollment__facility__name", verbose_name="Facility"
     )
     start_time = tables.DateColumn(
-        accessor="facility_enrollment.start", verbose_name="Start Date"
+        accessor="facility_enrollment__start", verbose_name="Start Date"
     )
     end_time = tables.DateColumn(
-        accessor="facility_enrollment.end", verbose_name="End Date"
+        accessor="facility_enrollment__end", verbose_name="End Date"
     )
 
     class Meta:

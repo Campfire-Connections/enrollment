@@ -8,14 +8,14 @@ from enrollment.models.facility_class import FacilityClassEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 
 class AttendeeClassEnrollmentTable(OrganizationLabelMixin, BaseTable):
-    attendee = tables.Column(accessor="attendee.name", verbose_name="Attendee")
+    attendee = tables.Column(accessor="attendee__name", verbose_name="Attendee")
     facility_class_enrollment = tables.Column(
-        accessor="facility_class.name", verbose_name="Facility Class"
+        accessor="facility_class__name", verbose_name="Facility Class"
     )
-    period = tables.Column(accessor="period.name", verbose_name="Period")
-    department = tables.Column(accessor="department.name", verbose_name="Department")
+    period = tables.Column(accessor="period__name", verbose_name="Period")
+    department = tables.Column(accessor="department__name", verbose_name="Department")
     attendee_enrollment = tables.Column(
-        accessor="attendee_enrollment.name", verbose_name="Organization Enrollment"
+        accessor="attendee_enrollment__name", verbose_name="Organization Enrollment"
     )
     
     class Meta:
@@ -60,12 +60,12 @@ class AttendeeClassEnrollmentTable(OrganizationLabelMixin, BaseTable):
 
 class ClassScheduleTable(BaseTable):
     class_name = tables.Column(
-        accessor="facility_class.name", verbose_name="Class Name"
+        accessor="facility_class__name", verbose_name="Class Name"
     )
     start_time = tables.DateTimeColumn(
-        accessor="period.start", verbose_name="Start Time"
+        accessor="period__start", verbose_name="Start Time"
     )
-    end_time = tables.DateTimeColumn(accessor="period.end", verbose_name="End Time")
+    end_time = tables.DateTimeColumn(accessor="period__end", verbose_name="End Time")
 
     class Meta:
         model = FacilityClassEnrollment

@@ -25,7 +25,7 @@ class PeriodTable(BaseTable):
     """
 
     week_name = tables.Column(
-        accessor="week.name",
+        accessor="week__name",
         verbose_name="Week",
     )
     start = tables.DateTimeColumn(format="h:i a", verbose_name="Start Time")

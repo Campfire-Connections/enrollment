@@ -10,7 +10,7 @@ from ..models.facility import FacilityEnrollment
 
 class FacilityEnrollmentTable(OrganizationLabelMixin, BaseTable):
     organization_enrollment = tables.Column(
-        accessor="organization_enrollment.name", verbose_name="Organization Enrollment"
+        accessor="organization_enrollment__name", verbose_name="Organization Enrollment"
     )
     start = tables.DateTimeColumn(format="M d", verbose_name="Start Date")
     end = tables.DateTimeColumn(format="M d", verbose_name="End Date")

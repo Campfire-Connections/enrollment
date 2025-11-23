@@ -7,10 +7,10 @@ from ..models.faction import FactionEnrollment
 
 class FactionEnrollmentTable(BaseTable):
     facility = tables.Column(
-        accessor="week.facility_enrollment.facility", verbose_name="Facility"
+        accessor="week__facility_enrollment__facility", verbose_name="Facility"
     )
     week_name = tables.Column(
-        accessor="week.name",
+        accessor="week__name",
         verbose_name="Week",
     )
     class Meta:
