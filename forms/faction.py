@@ -18,12 +18,12 @@ class FactionEnrollmentForm(forms.ModelForm):
     week = forms.ModelChoiceField(
         queryset=Week.objects.none(),
         label="Week",
-        required=False
+        required=True,
     )
     quarters = forms.ModelChoiceField(
         queryset=Quarters.objects.none(),
         label="Quarters (Faction)",
-        required=False
+        required=True,
     )
 
     class Meta:
@@ -45,8 +45,9 @@ class FactionEnrollmentForm(forms.ModelForm):
         if 'week' in self.data:
             try:
                 week_id = int(self.data.get('week'))
-                self.fields['quarter'].queryset = Quarters.objects.filter(
-                    week_id=week_id, type='faction'
-                )
+                self.fields['quarters'].queryset = Quarters.objects.filter(
+                    availability__week_id=week_id,
+                    availability__capacity__gt=0,
+                ).distinct()
             except (ValueError, TypeError):
                 self.fields['quarters'].queryset = Quarters.objects.none()

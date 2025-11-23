@@ -28,13 +28,13 @@
         </div>
     </div>
 
-    <!-- Quarter -->
+    <!-- Quarters -->
     <div class="form-group">
-        <label for="{{ form.quarter.id_for_label }}" class="control-label">
-        {{ form.quarter.label }}
+        <label for="{{ form.quarters.id_for_label }}" class="control-label">
+        {{ form.quarters.label }}
         </label>
         <div class="controls">
-        {{ form.quarter }}
+        {{ form.quarters }}
         </div>
     </div>
 
@@ -99,9 +99,9 @@ $("#id_week").change(function() {
         'week': weekId
         },
         success: function(data) {
-        $("#id_quarter").html('<option value="">Select Quarters</option>');
+        $("#id_quarters").html('<option value="">Select Quarters</option>');
         data.forEach(function(quarter) {
-            $("#id_quarter").append(
+            $("#id_quarters").append(
             `<option value="${quarter.id}">${quarter.name}</option>`
             );
         });
