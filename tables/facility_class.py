@@ -12,12 +12,12 @@ class FacilityClassEnrollmentTable(OrganizationLabelMixin, BaseTable):
     """Table for Facility Class Enrollments."""
 
     facility_class = tables.Column(
-        verbose_name="Facility Class", accessor="course.facility_class.name"
+        verbose_name="Facility Class", accessor="course__facility_class__name"
     )
-    period = tables.Column(verbose_name="Period", accessor="period.name")
-    department = tables.Column(verbose_name="Department", accessor="department.name")
+    period = tables.Column(verbose_name="Period", accessor="period__name")
+    department = tables.Column(verbose_name="Department", accessor="department__name")
     organization_enrollment = tables.Column(
-        verbose_name="Organization Enrollment", accessor="organization_enrollment.name"
+        verbose_name="Organization Enrollment", accessor="organization_enrollment__name"
     )
     max_enrollment = tables.Column(verbose_name="Max Enrollment")
     actions = tables.TemplateColumn(
