@@ -109,9 +109,27 @@ class FacilityEnrollmentIndexView(BaseTableListView):
     template_name = "facility-enrollment/list.html"
     context_object_name = "facility enrollments"
     table_class = FacilityEnrollmentTable
+    facility = None
 
     def get_queryset(self):
-        return FacilityEnrollment.objects.with_schedule()
+        qs = FacilityEnrollment.objects.with_schedule()
+        facility_slug = self.kwargs.get("facility_slug")
+        if facility_slug:
+            self.facility = get_object_or_404(Facility, slug=facility_slug)
+            qs = qs.filter(facility=self.facility)
+        else:
+            # fallback to user's facility if faculty
+            profile = getattr(self.request.user, "facultyprofile_profile", None)
+            if profile and profile.facility_id:
+                self.facility = profile.facility
+                qs = qs.filter(facility=self.facility)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.facility:
+            context["facility"] = self.facility
+        return context
 
 
 class FacilityEnrollmentShowView(BaseDetailView):
