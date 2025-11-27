@@ -16,6 +16,7 @@ from ..managers import (
     LeaderEnrollmentManager,
     AttendeeEnrollmentManager,
 )
+from enrollment.cache_keys import invalidate_quarters_usage_cache
 
 
 class FactionEnrollment(AbstractTemporalHierarchy):
@@ -87,12 +88,20 @@ class FactionEnrollment(AbstractTemporalHierarchy):
             )
         result = super().save(*args, **kwargs)
         self._sync_quarters_reservation(previous)
+        invalidate_quarters_usage_cache(
+            getattr(self, "id", None),
+            getattr(self, "quarters_id", None),
+        )
         return result
 
     @transaction.atomic
     def delete(self, *args, **kwargs):
+        faction_id = getattr(self, "id", None)
+        quarters_id = getattr(self, "quarters_id", None)
         self._release_current_quarters()
-        return super().delete(*args, **kwargs)
+        result = super().delete(*args, **kwargs)
+        invalidate_quarters_usage_cache(faction_id, quarters_id)
+        return result
 
     def _sync_quarters_reservation(self, previous):
         changed = (

@@ -71,6 +71,12 @@ class FacilityEnrollmentQuerySet(AbstractBaseQuerySet):
             )
         )
 
+    def with_related(self) -> "FacilityEnrollmentQuerySet":
+        return self.select_related(
+            "facility",
+            "organization_enrollment__organization",
+        )
+
 
 class FacultyEnrollmentQuerySet(AbstractBaseQuerySet):
     def classes_for_faculty(self, faculty_profile, facility_enrollment=None):
