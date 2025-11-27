@@ -15,6 +15,26 @@ from .faculty import FacultyEnrollment
 from .faction import FactionEnrollment
 from .facility import FacilityEnrollment
 
+
+class ActiveEnrollmentQuerySet(models.QuerySet):
+    def with_related(self):
+        return self.select_related(
+            "user",
+            "attendee_enrollment",
+            "attendee_enrollment__attendee__user",
+            "attendee_enrollment__faction_enrollment__week",
+            "leader_enrollment",
+            "leader_enrollment__leader__user",
+            "leader_enrollment__faction_enrollment__week",
+            "faction_enrollment",
+            "faction_enrollment__facility_enrollment__facility",
+            "faculty_enrollment",
+            "faculty_enrollment__facility_enrollment__facility",
+            "facility_enrollment",
+            "facility_enrollment__facility",
+            "facility_enrollment__organization_enrollment__organization",
+        )
+
 # from core.mixins import settings as stgs
 
 
@@ -80,6 +100,8 @@ class ActiveEnrollment(models.Model):
         related_name="active_facility_enrollments",
         verbose_name="Facility Enrollment",
     )
+
+    objects = ActiveEnrollmentQuerySet.as_manager()
 
     class Meta:
         """Metadata."""

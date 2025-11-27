@@ -1,16 +1,27 @@
+import logging
+from typing import Optional
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from enrollment.models.availability import (
-    FacilityClassAvailability,
-    QuartersWeekAvailability,
-)
 from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
 from enrollment.models.faction import FactionEnrollment
 from enrollment.models.faculty import FacultyEnrollment
+from enrollment.models.facility_class import FacilityClassEnrollment
 from enrollment.models.faculty_class import FacultyClassEnrollment as FacultyClassAssignment
 from enrollment.models.leader import LeaderEnrollment
+from enrollment.validators import (
+    ensure_attendee_capacity,
+    ensure_class_capacity,
+    ensure_faculty_quarters_capacity,
+    ensure_faction_quarters_capacity,
+    ensure_leader_capacity,
+    ensure_quarters_available,
+)
+from core.logging import log_event
+
+logger = logging.getLogger(__name__)
 
 
 class SchedulingService:
@@ -22,6 +33,10 @@ class SchedulingService:
     def __init__(self, user=None):
         self.user = user
 
+    def _log(self, action: str, **payload) -> None:
+        actor_id = getattr(self.user, "id", None)
+        log_event(f"scheduling.{action}", actor_id=actor_id, extra=payload)
+
     def schedule_faction_enrollment(
         self,
         *,
@@ -32,7 +47,7 @@ class SchedulingService:
         start,
         end,
         **extra_fields,
-    ):
+    ) -> FactionEnrollment:
         data = {
             "faction": faction,
             "facility_enrollment": facility_enrollment,
@@ -42,40 +57,90 @@ class SchedulingService:
             "end": end,
         }
         data.update(extra_fields)
-        self._ensure_quarters_available(facility_enrollment, week, quarters)
+        ensure_quarters_available(facility_enrollment, week, quarters)
         enrollment = FactionEnrollment(**data)
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "faction.schedule",
+            faction_id=getattr(faction, "id", None),
+            facility_enrollment_id=getattr(facility_enrollment, "id", None),
+            week_id=getattr(week, "id", None),
+        )
+        return enrollment
 
     def assign_attendee_to_class(
         self,
         *,
         attendee,
-        facility_class_enrollment,
+        facility_class_enrollment: FacilityClassEnrollment,
         attendee_enrollment=None,
-        attendee_class_enrollment=None,
-    ):
-        self._ensure_class_capacity(
+        attendee_class_enrollment: Optional[AttendeeClassEnrollment] = None,
+    ) -> AttendeeClassEnrollment:
+        ensure_class_capacity(
             facility_class_enrollment, exclude=attendee_class_enrollment
         )
         enrollment = attendee_class_enrollment or AttendeeClassEnrollment()
         enrollment.attendee = attendee
         enrollment.attendee_enrollment = attendee_enrollment
         enrollment.facility_class_enrollment = facility_class_enrollment
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "attendee.assign_class",
+            attendee_id=getattr(attendee, "id", None),
+            facility_class_enrollment_id=getattr(facility_class_enrollment, "id", None),
+        )
+        return enrollment
+
+    def drop_attendee_from_class(
+        self, *, attendee_class_enrollment: AttendeeClassEnrollment
+    ) -> None:
+        if not attendee_class_enrollment.pk:
+            return
+        enrollment_id = attendee_class_enrollment.pk
+        attendee_class_enrollment.delete()
+        self._log("attendee.drop_class", attendee_class_enrollment_id=enrollment_id)
+
+    def drop_faculty_from_class(
+        self, *, faculty_class_enrollment: FacultyClassAssignment
+    ) -> None:
+        if not faculty_class_enrollment.pk:
+            return
+        enrollment_id = faculty_class_enrollment.pk
+        faculty_class_enrollment.delete()
+        self._log("faculty.drop_class", faculty_class_enrollment_id=enrollment_id)
+
+    def swap_attendee_class(
+        self,
+        *,
+        attendee_class_enrollment: AttendeeClassEnrollment,
+        new_facility_class_enrollment: FacilityClassEnrollment,
+    ) -> AttendeeClassEnrollment:
+        return self.assign_attendee_to_class(
+            attendee=attendee_class_enrollment.attendee,
+            facility_class_enrollment=new_facility_class_enrollment,
+            attendee_enrollment=attendee_class_enrollment.attendee_enrollment,
+            attendee_class_enrollment=attendee_class_enrollment,
+        )
 
     def assign_faculty_to_class(
         self,
         *,
         faculty,
-        facility_class_enrollment,
+        facility_class_enrollment: FacilityClassEnrollment,
         faculty_enrollment=None,
         assignment=None,
-    ):
+    ) -> FacultyClassAssignment:
         enrollment = assignment or FacultyClassAssignment()
         enrollment.faculty = faculty
         enrollment.facility_class_enrollment = facility_class_enrollment
         enrollment.faculty_enrollment = faculty_enrollment
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "faculty.assign_class",
+            faculty_id=getattr(faculty, "id", None),
+            facility_class_enrollment_id=getattr(facility_class_enrollment, "id", None),
+        )
+        return enrollment
 
     def schedule_attendee_enrollment(
         self,
@@ -83,13 +148,13 @@ class SchedulingService:
         attendee,
         faction_enrollment,
         quarters=None,
-        attendee_enrollment=None,
+        attendee_enrollment: Optional[AttendeeEnrollment] = None,
         role=None,
-    ):
+    ) -> AttendeeEnrollment:
         quarters = quarters or getattr(faction_enrollment, "quarters", None)
         if not quarters:
             raise ValidationError("Quarters are required for attendee enrollment.")
-        self._ensure_attendee_capacity(
+        ensure_attendee_capacity(
             faction_enrollment, quarters, exclude_attendee=attendee_enrollment
         )
         enrollment = attendee_enrollment or AttendeeEnrollment()
@@ -109,7 +174,13 @@ class SchedulingService:
             enrollment.name = (
                 f"{attendee_name} ({week_label})" if week_label else attendee_name
             )
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "attendee.schedule",
+            attendee_id=getattr(attendee, "id", None),
+            faction_enrollment_id=getattr(faction_enrollment, "id", None),
+        )
+        return enrollment
 
     def schedule_faculty_enrollment(
         self,
@@ -119,8 +190,8 @@ class SchedulingService:
         quarters,
         role=None,
         instance=None,
-    ):
-        self._ensure_faculty_quarters_capacity(
+    ) -> FacultyEnrollment:
+        ensure_faculty_quarters_capacity(
             facility_enrollment, quarters, exclude=instance
         )
         enrollment = instance or FacultyEnrollment()
@@ -138,7 +209,13 @@ class SchedulingService:
             )
             session_label = facility_enrollment.facility.name
             enrollment.name = f"{faculty_name} ({session_label})"
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "faculty.schedule",
+            faculty_id=getattr(faculty, "id", None),
+            facility_enrollment_id=getattr(facility_enrollment, "id", None),
+        )
+        return enrollment
 
     def schedule_leader_enrollment(
         self,
@@ -148,11 +225,11 @@ class SchedulingService:
         quarters=None,
         leader_enrollment=None,
         role=None,
-    ):
+    ) -> LeaderEnrollment:
         quarters = quarters or getattr(faction_enrollment, "quarters", None)
         if not quarters:
             raise ValidationError("Quarters are required for leader enrollment.")
-        self._ensure_leader_capacity(
+        ensure_leader_capacity(
             faction_enrollment, quarters, exclude_leader=leader_enrollment
         )
         enrollment = leader_enrollment or LeaderEnrollment()
@@ -170,104 +247,16 @@ class SchedulingService:
             enrollment.name = (
                 f"{leader_name} ({week_label})" if week_label else leader_name
             )
-        return self._persist(enrollment)
+        enrollment = self._persist(enrollment)
+        self._log(
+            "leader.schedule",
+            leader_id=getattr(leader, "id", None),
+            faction_enrollment_id=getattr(faction_enrollment, "id", None),
+        )
+        return enrollment
 
     @transaction.atomic
     def _persist(self, enrollment):
         enrollment.full_clean()
         enrollment.save()
         return enrollment
-
-    def _ensure_quarters_available(self, facility_enrollment, week, quarters):
-        availability, _ = QuartersWeekAvailability.objects.get_or_create(
-            facility_enrollment=facility_enrollment,
-            week=week,
-            quarters=quarters,
-            defaults={"capacity": quarters.capacity},
-        )
-        if availability.is_reserved:
-            raise ValidationError(
-                "Selected quarters are already reserved for this week."
-            )
-
-    def _ensure_class_capacity(self, facility_class_enrollment, exclude=None):
-        availability = FacilityClassAvailability.for_enrollment(
-            facility_class_enrollment
-        )
-        remaining = availability.remaining
-        if (
-            exclude
-            and getattr(exclude, "facility_class_enrollment_id", None)
-            == facility_class_enrollment.id
-        ):
-            remaining += 1
-        if remaining <= 0:
-            raise ValidationError("This class is already at capacity.")
-
-    def _ensure_attendee_capacity(
-        self, faction_enrollment, quarters, exclude_attendee=None
-    ):
-        self._ensure_faction_quarters_capacity(
-            faction_enrollment,
-            quarters,
-            exclude_attendee=exclude_attendee,
-        )
-
-    def _ensure_leader_capacity(
-        self, faction_enrollment, quarters, exclude_leader=None
-    ):
-        self._ensure_faction_quarters_capacity(
-            faction_enrollment,
-            quarters,
-            exclude_leader=exclude_leader,
-        )
-
-    def _ensure_faculty_quarters_capacity(
-        self, facility_enrollment, quarters, exclude=None
-    ):
-        capacity = quarters.capacity or 1
-        qs = FacultyEnrollment.objects.filter(
-            facility_enrollment=facility_enrollment, quarters=quarters
-        )
-        if exclude is not None and getattr(exclude, "pk", None):
-            qs = qs.exclude(pk=exclude.pk)
-        if qs.count() >= capacity:
-            raise ValidationError("Faculty quarters are already full.")
-
-    def _ensure_faction_quarters_capacity(
-        self,
-        faction_enrollment,
-        quarters,
-        exclude_attendee=None,
-        exclude_leader=None,
-    ):
-        capacity = quarters.capacity or 0
-        if capacity <= 0:
-            return
-        occupied = self._calculate_quarters_usage(
-            faction_enrollment,
-            quarters,
-            exclude_attendee=exclude_attendee,
-            exclude_leader=exclude_leader,
-        )
-        if occupied >= capacity:
-            raise ValidationError("Selected quarters are already full.")
-
-    def _calculate_quarters_usage(
-        self,
-        faction_enrollment,
-        quarters,
-        exclude_attendee=None,
-        exclude_leader=None,
-    ):
-        attendee_qs = AttendeeEnrollment.objects.filter(
-            faction_enrollment=faction_enrollment, quarters=quarters
-        )
-        if exclude_attendee is not None and getattr(exclude_attendee, "pk", None):
-            attendee_qs = attendee_qs.exclude(pk=exclude_attendee.pk)
-        leader_qs = LeaderEnrollment.objects.filter(
-            faction_enrollment=faction_enrollment, quarters=quarters
-        )
-        if exclude_leader is not None and getattr(exclude_leader, "pk", None):
-            leader_qs = leader_qs.exclude(pk=exclude_leader.pk)
-        return attendee_qs.count() + leader_qs.count()

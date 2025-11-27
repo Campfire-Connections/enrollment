@@ -7,6 +7,7 @@ from django.apps import apps
 from .temporal import AbstractTemporalHierarchy
 
 from ..querysets import LeaderEnrollmentQuerySet
+from enrollment.cache_keys import invalidate_quarters_usage_cache
 
 class LeaderEnrollment(AbstractTemporalHierarchy):
     """Leader Enrollment Model."""
@@ -48,8 +49,23 @@ class LeaderEnrollment(AbstractTemporalHierarchy):
         ]
 
     def __str__(self):
-        """String representation."""
+        """Return display string for admin and logs."""
         return f"{self.leader} - {self.faction_enrollment.faction.name}"
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        invalidate_quarters_usage_cache(
+            getattr(self.faction_enrollment, "id", None),
+            getattr(self.quarters, "id", None),
+        )
+        return result
+
+    def delete(self, *args, **kwargs):
+        faction_id = getattr(self.faction_enrollment, "id", None)
+        quarters_id = getattr(self.quarters, "id", None)
+        result = super().delete(*args, **kwargs)
+        invalidate_quarters_usage_cache(faction_id, quarters_id)
+        return result
 
     def clean(self):
         super().clean()

@@ -368,6 +368,11 @@ class FacultyEnrollmentDeleteView(BaseDeleteView):
             },
         )
 
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        # keep audit via soft-delete mixin if present
+        return super().delete(request, *args, **kwargs)
+
 
 class FacultyClassEnrollmentIndexView(BaseTableListView):
     model = FacultyClassAssignment
@@ -491,3 +496,10 @@ class FacultyClassEnrollmentDeleteView(BaseDeleteView):
                 ),
             },
         )
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        service = SchedulingService(user=getattr(request, "user", None))
+        # audit/log drop through the scheduling service
+        service.drop_faculty_from_class(faculty_class_enrollment=self.object)
+        return super().delete(request, *args, **kwargs)

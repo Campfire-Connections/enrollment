@@ -208,3 +208,9 @@ class AttendeeClassEnrollmentDeleteView(DeleteView):
     model = AttendeeClassEnrollment
     template_name = "attendee-class-enrollment/confirm_delete.html"
     success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        service = SchedulingService(user=getattr(request, "user", None))
+        service.drop_attendee_from_class(attendee_class_enrollment=self.object)
+        return super().delete(request, *args, **kwargs)

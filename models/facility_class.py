@@ -34,6 +34,12 @@ class FacilityClassEnrollment(
         verbose_name_plural = "Facility Class Enrollments"
         ordering = ["facility_class__name", "period__start"]
         indexes = [models.Index(fields=["facility_class", "period"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["facility_class", "period", "department"],
+                name="unique_facility_class_period_department",
+            )
+        ]
 
     def __str__(self):
         return f"{self.facility_class} - {self.period} - {self.department}"

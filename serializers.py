@@ -1,4 +1,6 @@
-""" Enrollment Model Serializers. """
+"""
+Enrollment serializers with service-backed creation for business rules.
+"""
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers

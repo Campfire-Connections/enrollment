@@ -2,6 +2,7 @@
 
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.http import HttpResponseRedirect
 
 from core.views.base import (
     BaseListView,
@@ -14,6 +15,7 @@ from core.views.base import (
 from core.mixins.views import LoginRequiredMixin
 
 from ..models.enrollment import ActiveEnrollment
+from ..services import ActiveEnrollmentService
 
 
 class ActiveEnrollmentIndexView(BaseListView):
@@ -41,6 +43,17 @@ class ActiveEnrollmentCreateView(BaseCreateView):
     template_name = "active_enrollment/form.html"
     success_url = reverse_lazy("active_enrollment:index")
 
+    def form_valid(self, form):
+        service = ActiveEnrollmentService(form.cleaned_data["user"])
+        self.object = service.set_active(
+            attendee_enrollment=form.cleaned_data.get("attendee_enrollment"),
+            leader_enrollment=form.cleaned_data.get("leader_enrollment"),
+            faction_enrollment=form.cleaned_data.get("faction_enrollment"),
+            faculty_enrollment=form.cleaned_data.get("faculty_enrollment"),
+            facility_enrollment=form.cleaned_data.get("facility_enrollment"),
+        )
+        return HttpResponseRedirect(self.get_success_url())
+
 
 class ActiveEnrollmentUpdateView(BaseUpdateView):
     model = ActiveEnrollment
@@ -54,6 +67,17 @@ class ActiveEnrollmentUpdateView(BaseUpdateView):
     ]
     template_name = "active_enrollment/form.html"
     success_url = reverse_lazy("active_enrollment:index")
+
+    def form_valid(self, form):
+        service = ActiveEnrollmentService(form.cleaned_data["user"])
+        self.object = service.set_active(
+            attendee_enrollment=form.cleaned_data.get("attendee_enrollment"),
+            leader_enrollment=form.cleaned_data.get("leader_enrollment"),
+            faction_enrollment=form.cleaned_data.get("faction_enrollment"),
+            faculty_enrollment=form.cleaned_data.get("faculty_enrollment"),
+            facility_enrollment=form.cleaned_data.get("facility_enrollment"),
+        )
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class ActiveEnrollmentDeleteView(BaseDeleteView):
@@ -69,7 +93,9 @@ class MyScheduleView(LoginRequiredMixin, BaseTemplateView):
         context = super().get_context_data(**kwargs)
 
         # Fetch the active enrollment for the current user
-        active_enrollment = get_object_or_404(ActiveEnrollment, user=self.request.user)
+        active_enrollment = get_object_or_404(
+            ActiveEnrollment.objects.with_related(), user=self.request.user
+        )
 
         context["active_enrollment"] = active_enrollment
         context["attendee_enrollment"] = active_enrollment.attendee_enrollment

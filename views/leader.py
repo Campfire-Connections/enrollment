@@ -18,6 +18,7 @@ from enrollment.serializers import LeaderEnrollmentSerializer
 from enrollment.forms.leader import LeaderEnrollmentForm
 from enrollment.services import SchedulingService
 from enrollment.mixin import SchedulingServiceFormMixin
+from core.api import BaseModelViewSet
 
 
 class IndexView(BaseTableListView):
@@ -28,7 +29,7 @@ class IndexView(BaseTableListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = LeaderEnrollment.objects.all()
+        queryset = LeaderEnrollment.objects.with_related()
         leader_slug = self.kwargs.get("leader_slug")
         if leader_slug:
             queryset = queryset.filter(leader__slug=leader_slug)
@@ -103,6 +104,6 @@ class DeleteView(BaseDeleteView):
         )
 
 
-class LeaderEnrollmenyViewSet(viewsets.ModelViewSet):
-    queryset = LeaderEnrollment.objects.all()
+class LeaderEnrollmenyViewSet(BaseModelViewSet):
+    queryset = LeaderEnrollment.objects.with_related()
     serializer_class = LeaderEnrollmentSerializer

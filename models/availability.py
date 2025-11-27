@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -28,6 +29,14 @@ class BaseAvailability(models.Model):
             return
         self.reserved = max(self.reserved - amount, 0)
         self.save(update_fields=["reserved", "updated_at"])
+
+    def cache_key(self):
+        return f"availability:{self.__class__.__name__}:{self.pk}"
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        cache.delete(self.cache_key())
+        return result
 
 
 class QuartersWeekAvailability(BaseAvailability):

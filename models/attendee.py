@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from .temporal import AbstractTemporalHierarchy
 from ..querysets import AttendeeEnrollmentQuerySet
 from django.apps import apps
+from enrollment.cache_keys import invalidate_quarters_usage_cache
 
 class AttendeeEnrollment(AbstractTemporalHierarchy):
     """Attendee Enrollment Model."""
@@ -50,8 +51,23 @@ class AttendeeEnrollment(AbstractTemporalHierarchy):
         ]
 
     def __str__(self):
-        """String representation."""
+        """Return display string for admin and logs."""
         return f"{self.attendee} - {self.faction_enrollment.faction.name}"
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        invalidate_quarters_usage_cache(
+            getattr(self.faction_enrollment, "id", None),
+            getattr(self.quarters, "id", None),
+        )
+        return result
+
+    def delete(self, *args, **kwargs):
+        faction_id = getattr(self.faction_enrollment, "id", None)
+        quarters_id = getattr(self.quarters, "id", None)
+        result = super().delete(*args, **kwargs)
+        invalidate_quarters_usage_cache(faction_id, quarters_id)
+        return result
 
     def clean(self):
         super().clean()
