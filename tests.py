@@ -312,6 +312,26 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 0)
 
+    def test_availability_reserve_respects_holds(self):
+        facility_class_enrollment = self._build_facility_class_enrollment(
+            max_enrollment=2
+        )
+        availability = FacilityClassAvailability.for_enrollment(
+            facility_class_enrollment
+        )
+        availability.on_hold = 1
+        availability.save(update_fields=["on_hold", "updated_at"])
+
+        with self.assertRaises(ValidationError):
+            availability.reserve(2)
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, 0)
+
+        availability.reserve(1)
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, 1)
+
     def test_scheduling_service_prevents_overbooking(self):
         facility_class_enrollment = self._build_facility_class_enrollment(
             max_enrollment=1

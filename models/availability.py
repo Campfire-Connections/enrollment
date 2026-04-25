@@ -24,7 +24,10 @@ class BaseAvailability(models.Model):
         with transaction.atomic():
             updated = (
                 self.__class__.objects.select_for_update()
-                .filter(pk=self.pk, capacity__gte=F("reserved") + amount)
+                .filter(
+                    pk=self.pk,
+                    capacity__gte=F("reserved") + F("on_hold") + amount,
+                )
                 .update(reserved=F("reserved") + amount, updated_at=timezone.now())
             )
         if not updated:
