@@ -46,6 +46,9 @@ class AttendeeClassEnrollment(models.Model):
                 fields=["attendee", "facility_class_enrollment"],
                 condition=models.Q(facility_class_enrollment__isnull=False),
                 name="unique_attendee_class_assignment",
+                violation_error_message=(
+                    "This enrollment conflicts with an existing assignment."
+                ),
             )
         ]
 

@@ -349,6 +349,42 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
                 facility_class_enrollment=facility_class_enrollment,
             )
 
+    def test_service_returns_validation_error_for_duplicate_attendee_class(self):
+        facility_class_enrollment = self._build_facility_class_enrollment()
+        attendee = self._create_attendee_profile("attendee.service.duplicate")
+        service = SchedulingService()
+        service.assign_attendee_to_class(
+            attendee=attendee,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "This enrollment conflicts with an existing assignment.",
+        ):
+            service.assign_attendee_to_class(
+                attendee=attendee,
+                facility_class_enrollment=facility_class_enrollment,
+            )
+
+    def test_service_returns_validation_error_for_duplicate_faculty_class(self):
+        facility_class_enrollment = self._build_facility_class_enrollment()
+        faculty = self._create_faculty_profile("faculty.service.duplicate")
+        service = SchedulingService()
+        service.assign_faculty_to_class(
+            faculty=faculty,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "This enrollment conflicts with an existing assignment.",
+        ):
+            service.assign_faculty_to_class(
+                faculty=faculty,
+                facility_class_enrollment=facility_class_enrollment,
+            )
+
     def test_attendee_cannot_be_assigned_to_same_class_twice(self):
         facility_class_enrollment = self._build_facility_class_enrollment()
         attendee = self._create_attendee_profile("attendee.duplicate.class")

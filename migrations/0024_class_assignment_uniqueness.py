@@ -23,6 +23,9 @@ class Migration(migrations.Migration):
                 condition=models.Q(("facility_class_enrollment__isnull", False)),
                 fields=("attendee", "facility_class_enrollment"),
                 name="unique_attendee_class_assignment",
+                violation_error_message=(
+                    "This enrollment conflicts with an existing assignment."
+                ),
             ),
         ),
         migrations.AddConstraint(
@@ -31,6 +34,9 @@ class Migration(migrations.Migration):
                 condition=models.Q(("facility_class_enrollment__isnull", False)),
                 fields=("faculty", "facility_class_enrollment"),
                 name="unique_faculty_class_assignment",
+                violation_error_message=(
+                    "This enrollment conflicts with an existing assignment."
+                ),
             ),
         ),
     ]

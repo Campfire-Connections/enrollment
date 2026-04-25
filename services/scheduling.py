@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.attendee_class import AttendeeClassEnrollment
@@ -258,5 +258,10 @@ class SchedulingService:
     @transaction.atomic
     def _persist(self, enrollment):
         enrollment.full_clean()
-        enrollment.save()
+        try:
+            enrollment.save()
+        except IntegrityError as exc:
+            raise ValidationError(
+                "This enrollment conflicts with an existing assignment."
+            ) from exc
         return enrollment

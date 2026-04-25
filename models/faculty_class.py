@@ -43,6 +43,9 @@ class FacultyClassEnrollment(models.Model):
                 fields=["faculty", "facility_class_enrollment"],
                 condition=models.Q(facility_class_enrollment__isnull=False),
                 name="unique_faculty_class_assignment",
+                violation_error_message=(
+                    "This enrollment conflicts with an existing assignment."
+                ),
             )
         ]
 
