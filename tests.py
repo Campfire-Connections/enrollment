@@ -34,7 +34,7 @@ from enrollment.serializers import (
 )
 from enrollment.services import SchedulingService
 from enrollment.cache_keys import quarters_usage_cache_key
-from enrollment.views.leader import LeaderEnrollmenyViewSet
+from enrollment.views.leader import LeaderEnrollmentViewSet
 from enrollment.views.facility import FacilityEnrollmentManageView
 from enrollment.views.facility_class import ManageView as FacilityClassManageView
 from enrollment.views.temporal import WeekManageView
@@ -740,7 +740,7 @@ class LeaderEnrollmentViewSetTests(EnrollmentScenarioBase):
             format="json",
         )
         force_authenticate(request, user=leader.user)
-        response = LeaderEnrollmenyViewSet.as_view({"post": "create"})(request)
+        response = LeaderEnrollmentViewSet.as_view({"post": "create"})(request)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_viewset_capacity_error(self):
@@ -766,7 +766,7 @@ class LeaderEnrollmentViewSetTests(EnrollmentScenarioBase):
             format="json",
         )
         force_authenticate(first_request, user=leader_one.user)
-        LeaderEnrollmenyViewSet.as_view({"post": "create"})(first_request)
+        LeaderEnrollmentViewSet.as_view({"post": "create"})(first_request)
 
         second_request = self.factory.post(
             "/api/",
@@ -778,7 +778,7 @@ class LeaderEnrollmentViewSetTests(EnrollmentScenarioBase):
             format="json",
         )
         force_authenticate(second_request, user=leader_two.user)
-        response = LeaderEnrollmenyViewSet.as_view({"post": "create"})(second_request)
+        response = LeaderEnrollmentViewSet.as_view({"post": "create"})(second_request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _build_facility_class_enrollment(self, max_enrollment=10):

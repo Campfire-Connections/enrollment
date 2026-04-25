@@ -105,7 +105,10 @@ class DeleteView(BaseDeleteView):
         )
 
 
-class LeaderEnrollmenyViewSet(BaseModelViewSet):
+class LeaderEnrollmentViewSet(BaseModelViewSet):
     queryset = LeaderEnrollment.objects.with_related()
     serializer_class = LeaderEnrollmentSerializer
     permission_classes = [IsAuthenticatedAndActive]
+
+
+LeaderEnrollmenyViewSet = LeaderEnrollmentViewSet
