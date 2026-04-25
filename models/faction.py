@@ -88,6 +88,11 @@ class FactionEnrollment(AbstractTemporalHierarchy):
             )
         result = super().save(*args, **kwargs)
         self._sync_quarters_reservation(previous)
+        if previous:
+            invalidate_quarters_usage_cache(
+                getattr(previous, "id", None),
+                getattr(previous, "quarters_id", None),
+            )
         invalidate_quarters_usage_cache(
             getattr(self, "id", None),
             getattr(self, "quarters_id", None),
@@ -113,6 +118,8 @@ class FactionEnrollment(AbstractTemporalHierarchy):
         )
         if changed:
             previous._release_current_quarters()
+        if previous and not changed:
+            return
         self._reserve_current_quarters()
 
     def _availability_filter(self, quarters=None, week=None):

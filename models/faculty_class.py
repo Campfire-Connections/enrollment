@@ -38,6 +38,13 @@ class FacultyClassEnrollment(models.Model):
         verbose_name = "Faculty Class Enrollment"
         verbose_name_plural = "Faculty Class Enrollments"
         ordering = ["faculty__user__last_name", "faculty__user__first_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["faculty", "facility_class_enrollment"],
+                condition=models.Q(facility_class_enrollment__isnull=False),
+                name="unique_faculty_class_assignment",
+            )
+        ]
 
     def __str__(self):
         """String representation."""

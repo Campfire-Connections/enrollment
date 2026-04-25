@@ -110,6 +110,8 @@ class FacultyEnrollment(AbstractTemporalHierarchy):
         )
         if changed:
             previous._release_current_quarters()
+        if previous and not changed:
+            return
         self._reserve_current_quarters()
 
     def _reserve_current_quarters(self):

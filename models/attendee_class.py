@@ -41,6 +41,13 @@ class AttendeeClassEnrollment(models.Model):
             "attendee__user__last_name",
             "attendee__user__first_name",
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attendee", "facility_class_enrollment"],
+                condition=models.Q(facility_class_enrollment__isnull=False),
+                name="unique_attendee_class_assignment",
+            )
+        ]
 
     @transaction.atomic
     def save(self, *args, **kwargs):

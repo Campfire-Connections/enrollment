@@ -1,6 +1,8 @@
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F
+from django.utils import timezone
 
 
 class BaseAvailability(models.Model):
@@ -19,16 +21,31 @@ class BaseAvailability(models.Model):
     def reserve(self, amount=1):
         if amount <= 0:
             return
-        if self.reserved + amount > self.capacity:
+        with transaction.atomic():
+            updated = (
+                self.__class__.objects.select_for_update()
+                .filter(pk=self.pk, capacity__gte=F("reserved") + amount)
+                .update(reserved=F("reserved") + amount, updated_at=timezone.now())
+            )
+        if not updated:
             raise ValidationError("Capacity exceeded for this resource.")
-        self.reserved += amount
-        self.save(update_fields=["reserved", "updated_at"])
+        cache.delete(self.cache_key())
+        self.refresh_from_db(fields=["reserved", "updated_at"])
 
     def release(self, amount=1):
         if amount <= 0:
             return
-        self.reserved = max(self.reserved - amount, 0)
-        self.save(update_fields=["reserved", "updated_at"])
+        with transaction.atomic():
+            self.__class__.objects.select_for_update().filter(pk=self.pk).update(
+                reserved=models.Case(
+                    models.When(reserved__lt=amount, then=0),
+                    default=F("reserved") - amount,
+                    output_field=models.PositiveIntegerField(),
+                ),
+                updated_at=timezone.now(),
+            )
+        cache.delete(self.cache_key())
+        self.refresh_from_db(fields=["reserved", "updated_at"])
 
     def cache_key(self):
         return f"availability:{self.__class__.__name__}:{self.pk}"
@@ -65,18 +82,25 @@ class QuartersWeekAvailability(BaseAvailability):
         return self.reserved >= self.capacity
 
     def reserve_full(self):
-        if self.is_reserved:
+        with transaction.atomic():
+            updated = (
+                QuartersWeekAvailability.objects.select_for_update()
+                .filter(pk=self.pk, reserved__lt=F("capacity"))
+                .update(reserved=F("capacity"), updated_at=timezone.now())
+            )
+        if not updated:
             raise ValidationError(
                 "These quarters are already reserved for the selected week."
             )
-        self.reserved = self.capacity
-        self.save(update_fields=["reserved", "updated_at"])
+        cache.delete(self.cache_key())
+        self.refresh_from_db(fields=["reserved", "updated_at"])
 
     def release_full(self):
-        if self.reserved == 0:
-            return
-        self.reserved = 0
-        self.save(update_fields=["reserved", "updated_at"])
+        QuartersWeekAvailability.objects.filter(pk=self.pk).update(
+            reserved=0, updated_at=timezone.now()
+        )
+        cache.delete(self.cache_key())
+        self.refresh_from_db(fields=["reserved", "updated_at"])
 
 
 class FacilityClassAvailability(BaseAvailability):

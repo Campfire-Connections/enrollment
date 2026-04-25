@@ -54,14 +54,6 @@ class AttendeeEnrollment(AbstractTemporalHierarchy):
         """Return display string for admin and logs."""
         return f"{self.attendee} - {self.faction_enrollment.faction.name}"
 
-    def save(self, *args, **kwargs):
-        result = super().save(*args, **kwargs)
-        invalidate_quarters_usage_cache(
-            getattr(self.faction_enrollment, "id", None),
-            getattr(self.quarters, "id", None),
-        )
-        return result
-
     def delete(self, *args, **kwargs):
         faction_id = getattr(self.faction_enrollment, "id", None)
         quarters_id = getattr(self.quarters, "id", None)
@@ -92,8 +84,28 @@ class AttendeeEnrollment(AbstractTemporalHierarchy):
                 raise ValidationError("Selected quarters are already full.")
 
     def save(self, *args, **kwargs):
+        """
+        Keep start/end aligned with the faction enrollment and clear quarters cache.
+        """
+        previous = None
+        if self.pk:
+            previous = (
+                AttendeeEnrollment.objects.only("faction_enrollment", "quarters")
+                .get(pk=self.pk)
+            )
         if self.faction_enrollment and not self.start:
             self.start = self.faction_enrollment.start
         if self.faction_enrollment and not self.end:
             self.end = self.faction_enrollment.end
-        super().save(*args, **kwargs)
+
+        result = super().save(*args, **kwargs)
+        if previous:
+            invalidate_quarters_usage_cache(
+                getattr(previous, "faction_enrollment_id", None),
+                getattr(previous, "quarters_id", None),
+            )
+        invalidate_quarters_usage_cache(
+            getattr(self.faction_enrollment, "id", None),
+            getattr(self.quarters, "id", None),
+        )
+        return result

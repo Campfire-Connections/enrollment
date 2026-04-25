@@ -19,6 +19,7 @@ from enrollment.forms.leader import LeaderEnrollmentForm
 from enrollment.services import SchedulingService
 from enrollment.mixin import SchedulingServiceFormMixin
 from core.api import BaseModelViewSet
+from core.permissions import IsAuthenticatedAndActive
 
 
 class IndexView(BaseTableListView):
@@ -107,3 +108,4 @@ class DeleteView(BaseDeleteView):
 class LeaderEnrollmenyViewSet(BaseModelViewSet):
     queryset = LeaderEnrollment.objects.with_related()
     serializer_class = LeaderEnrollmentSerializer
+    permission_classes = [IsAuthenticatedAndActive]

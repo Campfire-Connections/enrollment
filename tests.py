@@ -2,7 +2,9 @@ from datetime import timedelta, time
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -10,6 +12,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from core.tests import BaseDomainTestCase, mute_profile_signals
 from enrollment.models.availability import (
     FacilityClassAvailability,
+    FacultyQuartersAvailability,
     QuartersWeekAvailability,
 )
 from enrollment.models.attendee_class import AttendeeClassEnrollment
@@ -23,12 +26,14 @@ from facility.models.faculty import FacultyProfile
 from faction.models.attendee import AttendeeProfile
 from faction.models.leader import LeaderProfile
 from enrollment.models.faculty import FacultyEnrollment
+from enrollment.models.faculty_class import FacultyClassEnrollment
 from course.models.facility_class import FacilityClass
 from enrollment.serializers import (
     AttendeeEnrollmentSerializer,
     LeaderEnrollmentSerializer,
 )
 from enrollment.services import SchedulingService
+from enrollment.cache_keys import quarters_usage_cache_key
 from enrollment.views.leader import LeaderEnrollmenyViewSet
 from enrollment.views.facility import FacilityEnrollmentManageView
 from enrollment.views.facility_class import ManageView as FacilityClassManageView
@@ -323,6 +328,137 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
                 attendee=attendee_two,
                 facility_class_enrollment=facility_class_enrollment,
             )
+
+    def test_attendee_cannot_be_assigned_to_same_class_twice(self):
+        facility_class_enrollment = self._build_facility_class_enrollment()
+        attendee = self._create_attendee_profile("attendee.duplicate.class")
+        AttendeeClassEnrollment.objects.create(
+            attendee=attendee,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                AttendeeClassEnrollment.objects.create(
+                    attendee=attendee,
+                    facility_class_enrollment=facility_class_enrollment,
+                )
+
+    def test_faculty_cannot_be_assigned_to_same_class_twice(self):
+        facility_class_enrollment = self._build_facility_class_enrollment()
+        faculty = self._create_faculty_profile("faculty.duplicate.class")
+        FacultyClassEnrollment.objects.create(
+            faculty=faculty,
+            facility_class_enrollment=facility_class_enrollment,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                FacultyClassEnrollment.objects.create(
+                    faculty=faculty,
+                    facility_class_enrollment=facility_class_enrollment,
+                )
+
+    def test_faction_enrollment_update_does_not_reserve_again(self):
+        faction_enrollment = self._create_faction_enrollment(name="Stable Week")
+        availability = QuartersWeekAvailability.objects.get(
+            week=self.week,
+            quarters=self.quarters,
+        )
+        self.assertEqual(availability.reserved, self.quarters.capacity)
+
+        faction_enrollment.name = "Stable Week Renamed"
+        faction_enrollment.save()
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, self.quarters.capacity)
+
+    def test_faculty_enrollment_update_does_not_reserve_again(self):
+        staff_quarters = Quarters.objects.create(
+            name="Staff Stable Cabin",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faculty = self._create_faculty_profile("faculty.stable")
+        enrollment = SchedulingService().schedule_faculty_enrollment(
+            faculty=faculty,
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+        )
+        availability = FacultyQuartersAvailability.objects.get(
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+        )
+        self.assertEqual(availability.reserved, 1)
+
+        enrollment.role = "Program Lead"
+        enrollment.save()
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, 1)
+
+    def test_attendee_move_invalidates_old_quarters_cache(self):
+        first_quarters = Quarters.objects.create(
+            name="Cache Cabin A",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        second_quarters = Quarters.objects.create(
+            name="Cache Cabin B",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Cache Week",
+            quarters=first_quarters,
+        )
+        attendee = self._create_attendee_profile("attendee.cache.move")
+        enrollment = SchedulingService().schedule_attendee_enrollment(
+            attendee=attendee,
+            faction_enrollment=faction_enrollment,
+            quarters=first_quarters,
+        )
+        old_key = quarters_usage_cache_key(faction_enrollment.pk, first_quarters.pk)
+        cache.set(old_key, 1, 60)
+
+        enrollment.quarters = second_quarters
+        enrollment.save()
+
+        self.assertIsNone(cache.get(old_key))
+
+    def test_leader_move_invalidates_old_quarters_cache(self):
+        first_quarters = Quarters.objects.create(
+            name="Leader Cache Cabin A",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        second_quarters = Quarters.objects.create(
+            name="Leader Cache Cabin B",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Leader Cache Week",
+            quarters=first_quarters,
+        )
+        leader = self._create_leader_profile("leader.cache.move")
+        enrollment = SchedulingService().schedule_leader_enrollment(
+            leader=leader,
+            faction_enrollment=faction_enrollment,
+            quarters=first_quarters,
+        )
+        old_key = quarters_usage_cache_key(faction_enrollment.pk, first_quarters.pk)
+        cache.set(old_key, 1, 60)
+
+        enrollment.quarters = second_quarters
+        enrollment.save()
+
+        self.assertIsNone(cache.get(old_key))
 
     def test_facility_enrollment_queryset_prefetches_schedule(self):
         enrollment = FacilityEnrollment.objects.with_schedule().get(
