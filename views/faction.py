@@ -7,7 +7,8 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )
-from django.urls import reverse_lazy
+from django.http import HttpResponseRedirect
+from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404
 
 from faction.models.faction import Faction
@@ -54,6 +55,8 @@ class FactionEnrollmentShowView(DetailView):
     model = FactionEnrollment
     template_name = "faction-enrollment/show.html"
     context_object_name = "faction_enrollment"
+    pk_url_kwarg = "enrollment_pk"
+    slug_url_kwarg = "enrollment_slug"
 
     def get_queryset(self):
         return FactionEnrollment.objects.with_related()
@@ -96,17 +99,57 @@ class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
             "factions:show", kwargs={"faction_slug": self.object.faction.slug}
         )
 
-class FactionEnrollmentUpdateView(UpdateView):
+class FactionEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = FactionEnrollment
-    fields = "__all__"
+    form_class = FactionEnrollmentForm
     template_name = "faction-enrollment/form.html"
-    success_url = reverse_lazy("faction:faction_enrollment_index")
+    service_class = SchedulingService
+    service_method = "schedule_faction_enrollment"
+    pk_url_kwarg = "enrollment_pk"
+    slug_url_kwarg = "enrollment_slug"
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        return super().form_valid(form)
+
+    def get_service_kwargs(self, form):
+        week = form.cleaned_data["week"]
+        faction = form.cleaned_data.get("faction") or self.object.faction
+        return {
+            "faction": faction,
+            "facility_enrollment": form.cleaned_data["facility_enrollment"],
+            "week": week,
+            "quarters": form.cleaned_data["quarters"],
+            "start": week.start,
+            "end": week.end,
+            "name": form.instance.name or f"{faction.name} - {week.name}",
+            "description": form.instance.description,
+            "faction_enrollment": self.object,
+        }
+
+    def get_success_url(self):
+        return reverse(
+            "factions:show", kwargs={"faction_slug": self.object.faction.slug}
+        )
 
 
 class FactionEnrollmentDeleteView(DeleteView):
     model = FactionEnrollment
     template_name = "faction-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("faction:faction_enrollment_index")
+    pk_url_kwarg = "enrollment_pk"
+    slug_url_kwarg = "enrollment_slug"
+
+    def get_success_url(self):
+        return reverse(
+            "factions:show", kwargs={"faction_slug": self.object.faction.slug}
+        )
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        service = SchedulingService(user=getattr(request, "user", None))
+        service.drop_faction_enrollment(faction_enrollment=self.object)
+        return HttpResponseRedirect(success_url)
 
 
 
@@ -211,6 +254,7 @@ class AttendeeClassEnrollmentDeleteView(DeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
+        success_url = self.get_success_url()
         service = SchedulingService(user=getattr(request, "user", None))
         service.drop_attendee_from_class(attendee_class_enrollment=self.object)
-        return super().delete(request, *args, **kwargs)
+        return HttpResponseRedirect(success_url)

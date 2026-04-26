@@ -2,6 +2,7 @@
 
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect
 
 from core.views.base import (
     BaseManageView,
@@ -370,8 +371,10 @@ class FacultyEnrollmentDeleteView(BaseDeleteView):
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
-        # keep audit via soft-delete mixin if present
-        return super().delete(request, *args, **kwargs)
+        success_url = self.get_success_url()
+        service = SchedulingService(user=getattr(request, "user", None))
+        service.drop_faculty_enrollment(faculty_enrollment=self.object)
+        return HttpResponseRedirect(success_url)
 
 
 class FacultyClassEnrollmentIndexView(BaseTableListView):
@@ -502,4 +505,4 @@ class FacultyClassEnrollmentDeleteView(BaseDeleteView):
         service = SchedulingService(user=getattr(request, "user", None))
         # audit/log drop through the scheduling service
         service.drop_faculty_from_class(faculty_class_enrollment=self.object)
-        return super().delete(request, *args, **kwargs)
+        return HttpResponseRedirect(self.get_success_url())

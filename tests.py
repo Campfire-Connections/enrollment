@@ -84,7 +84,7 @@ class EnrollmentScenarioBase(BaseDomainTestCase):
     def _create_faction_enrollment(self, name, quarters=None, week=None):
         week = week or self.week
         quarters = quarters or self.quarters
-        return FactionEnrollment.objects.create(
+        return SchedulingService().schedule_faction_enrollment(
             facility_enrollment=self.facility_enrollment,
             start=week.start,
             end=week.end,
@@ -245,7 +245,7 @@ class FacultyPermissionTests(EnrollmentScenarioBase):
     def _create_faction_enrollment(self, name, quarters=None, week=None):
         week = week or self.week
         quarters = quarters or self.quarters
-        return FactionEnrollment.objects.create(
+        return SchedulingService().schedule_faction_enrollment(
             facility_enrollment=self.facility_enrollment,
             start=week.start,
             end=week.end,
@@ -301,14 +301,15 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
         self.assertEqual(availability.capacity, 10)
 
         attendee = self._create_attendee_profile("attendee.availability")
-        enrollment = AttendeeClassEnrollment.objects.create(
+        service = SchedulingService()
+        enrollment = service.assign_attendee_to_class(
             attendee=attendee,
             facility_class_enrollment=facility_class_enrollment,
         )
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 1)
 
-        enrollment.delete()
+        service.drop_attendee_from_class(attendee_class_enrollment=enrollment)
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 0)
 
@@ -423,11 +424,75 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
         )
         self.assertEqual(availability.reserved, self.quarters.capacity)
 
-        faction_enrollment.name = "Stable Week Renamed"
-        faction_enrollment.save()
+        SchedulingService().schedule_faction_enrollment(
+            faction=faction_enrollment.faction,
+            facility_enrollment=faction_enrollment.facility_enrollment,
+            week=faction_enrollment.week,
+            quarters=faction_enrollment.quarters,
+            start=faction_enrollment.start,
+            end=faction_enrollment.end,
+            name="Stable Week Renamed",
+            faction_enrollment=faction_enrollment,
+        )
 
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, self.quarters.capacity)
+
+    def test_faction_enrollment_move_releases_previous_quarters(self):
+        original_quarters = Quarters.objects.create(
+            name="Original Faction Cabin",
+            capacity=4,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        new_quarters = Quarters.objects.create(
+            name="New Faction Cabin",
+            capacity=5,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faction_enrollment = self._create_faction_enrollment(
+            name="Moving Week",
+            quarters=original_quarters,
+        )
+        original_availability = QuartersWeekAvailability.objects.get(
+            week=self.week,
+            quarters=original_quarters,
+        )
+        self.assertEqual(original_availability.reserved, original_quarters.capacity)
+
+        SchedulingService().schedule_faction_enrollment(
+            faction=faction_enrollment.faction,
+            facility_enrollment=faction_enrollment.facility_enrollment,
+            week=faction_enrollment.week,
+            quarters=new_quarters,
+            start=faction_enrollment.start,
+            end=faction_enrollment.end,
+            name=faction_enrollment.name,
+            faction_enrollment=faction_enrollment,
+        )
+
+        original_availability.refresh_from_db()
+        new_availability = QuartersWeekAvailability.objects.get(
+            week=self.week,
+            quarters=new_quarters,
+        )
+        self.assertEqual(original_availability.reserved, 0)
+        self.assertEqual(new_availability.reserved, new_quarters.capacity)
+
+    def test_faction_enrollment_drop_releases_quarters(self):
+        faction_enrollment = self._create_faction_enrollment(name="Drop Week")
+        availability = QuartersWeekAvailability.objects.get(
+            week=self.week,
+            quarters=self.quarters,
+        )
+
+        SchedulingService().drop_faction_enrollment(
+            faction_enrollment=faction_enrollment
+        )
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, 0)
 
     def test_faculty_enrollment_update_does_not_reserve_again(self):
         staff_quarters = Quarters.objects.create(
@@ -448,11 +513,39 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
         )
         self.assertEqual(availability.reserved, 1)
 
-        enrollment.role = "Program Lead"
-        enrollment.save()
+        SchedulingService().schedule_faculty_enrollment(
+            faculty=faculty,
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+            role="Program Lead",
+            instance=enrollment,
+        )
 
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 1)
+
+    def test_faculty_enrollment_drop_releases_quarters(self):
+        staff_quarters = Quarters.objects.create(
+            name="Staff Drop Cabin",
+            capacity=2,
+            type=self.quarters_type,
+            facility=self.facility,
+        )
+        faculty = self._create_faculty_profile("faculty.drop")
+        enrollment = SchedulingService().schedule_faculty_enrollment(
+            faculty=faculty,
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+        )
+        availability = FacultyQuartersAvailability.objects.get(
+            facility_enrollment=self.facility_enrollment,
+            quarters=staff_quarters,
+        )
+
+        SchedulingService().drop_faculty_enrollment(faculty_enrollment=enrollment)
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, 0)
 
     def test_attendee_move_invalidates_old_quarters_cache(self):
         first_quarters = Quarters.objects.create(
