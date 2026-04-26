@@ -1,8 +1,7 @@
 import csv
-
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import TemplateView
@@ -29,6 +28,8 @@ class AvailabilityDashboardView(LoginRequiredMixin, StaffRequiredMixin, Template
     def get(self, request, *args, **kwargs):
         if request.GET.get("format") == "csv":
             return self._csv_response()
+        if request.GET.get("format") == "json":
+            return self._json_response()
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -71,6 +72,44 @@ class AvailabilityDashboardView(LoginRequiredMixin, StaffRequiredMixin, Template
                 ]
             )
         return response
+
+    def _json_response(self):
+        status = build_availability_status()
+        return JsonResponse(
+            {
+                "summary": status["summary"],
+                "issues": [
+                    {
+                        "kind": issue.kind,
+                        "label": issue.label,
+                        "severity": issue.severity,
+                        "expected": issue.expected,
+                        "actual": issue.actual,
+                    }
+                    for issue in status["issues"]
+                ],
+                "holds": [
+                    self._availability_payload(hold["kind"], hold["label"], hold["availability"])
+                    for hold in status["holds"]
+                ],
+                "full": [
+                    self._availability_payload(item["kind"], item["label"], item["availability"])
+                    for item in status["full"]
+                ],
+            },
+            json_dumps_params={"indent": 2},
+        )
+
+    def _availability_payload(self, kind, label, availability):
+        return {
+            "kind": kind,
+            "label": label,
+            "id": availability.pk,
+            "capacity": availability.capacity,
+            "reserved": availability.reserved,
+            "on_hold": availability.on_hold,
+            "remaining": availability.remaining,
+        }
 
 
 class AvailabilityHoldView(LoginRequiredMixin, StaffRequiredMixin, View):

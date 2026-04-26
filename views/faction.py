@@ -10,6 +10,7 @@ from django.views.generic import (
 from django.http import HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404
+from core.mixins.views import LoginRequiredMixin
 
 from faction.models.faction import Faction
 
@@ -26,7 +27,7 @@ from ..tables.faction import FactionEnrollmentTable
 from django_tables2 import SingleTableMixin
 
 
-class FactionEnrollmentIndexView(SingleTableMixin, ListView):
+class FactionEnrollmentIndexView(LoginRequiredMixin, SingleTableMixin, ListView):
     model = FactionEnrollment
     table_class = FactionEnrollmentTable
     template_name = "faction-enrollment/index.html"
@@ -52,7 +53,7 @@ class FactionEnrollmentIndexView(SingleTableMixin, ListView):
         return context
 
 
-class FactionEnrollmentShowView(DetailView):
+class FactionEnrollmentShowView(LoginRequiredMixin, DetailView):
     model = FactionEnrollment
     template_name = "faction-enrollment/show.html"
     context_object_name = "faction_enrollment"
@@ -63,7 +64,9 @@ class FactionEnrollmentShowView(DetailView):
         return FactionEnrollment.objects.with_related()
 
 
-class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
+class FactionEnrollmentCreateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, CreateView
+):
     model = FactionEnrollment
     template_name = "faction-enrollment/form.html"
     success_url = reverse_lazy("factions:enrollments:index")
@@ -104,7 +107,9 @@ class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
             "factions:show", kwargs={"faction_slug": self.object.faction.slug}
         )
 
-class FactionEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
+class FactionEnrollmentUpdateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, UpdateView
+):
     model = FactionEnrollment
     form_class = FactionEnrollmentForm
     template_name = "faction-enrollment/form.html"
@@ -143,7 +148,7 @@ class FactionEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
         )
 
 
-class FactionEnrollmentDeleteView(DeleteView):
+class FactionEnrollmentDeleteView(LoginRequiredMixin, DeleteView):
     model = FactionEnrollment
     template_name = "faction-enrollment/confirm_delete.html"
     pk_url_kwarg = "enrollment_pk"
@@ -165,7 +170,7 @@ class FactionEnrollmentDeleteView(DeleteView):
 
 
 
-class AttendeeEnrollmentIndexView(ListView):
+class AttendeeEnrollmentIndexView(LoginRequiredMixin, ListView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/index.html"
     context_object_name = "attendee_enrollments"
@@ -173,7 +178,7 @@ class AttendeeEnrollmentIndexView(ListView):
     def get_queryset(self):
         return AttendeeEnrollment.objects.with_related()
 
-class AttendeeEnrollmentIndexByAttendee(ListView):
+class AttendeeEnrollmentIndexByAttendee(LoginRequiredMixin, ListView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/index.html"
     context_object_name = "attendee_enrollments"
@@ -181,13 +186,15 @@ class AttendeeEnrollmentIndexByAttendee(ListView):
     def get_queryset(self):
         return AttendeeEnrollment.objects.with_related()
     
-class AttendeeEnrollmentShowView(DetailView):
+class AttendeeEnrollmentShowView(LoginRequiredMixin, DetailView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/show.html"
     context_object_name = "attendee_enrollment"
 
 
-class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
+class AttendeeEnrollmentCreateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, CreateView
+):
     model = AttendeeEnrollment
     form_class = AttendeeEnrollmentForm
     template_name = "attendee-enrollment/form.html"
@@ -196,7 +203,9 @@ class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     service_method = "schedule_attendee_enrollment"
 
 
-class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
+class AttendeeEnrollmentUpdateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, UpdateView
+):
     model = AttendeeEnrollment
     form_class = AttendeeEnrollmentForm
     template_name = "attendee-enrollment/form.html"
@@ -213,25 +222,27 @@ class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
         return kwargs
 
 
-class AttendeeEnrollmentDeleteView(DeleteView):
+class AttendeeEnrollmentDeleteView(LoginRequiredMixin, DeleteView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/confirm_delete.html"
     success_url = reverse_lazy("enrollments:attendee:index")
 
 
-class AttendeeClassEnrollmentIndexView(ListView):
+class AttendeeClassEnrollmentIndexView(LoginRequiredMixin, ListView):
     model = AttendeeClassEnrollment
     template_name = "attendee-class-enrollment/index.html"
     context_object_name = "attendee_class_enrollments"
 
 
-class AttendeeClassEnrollmentShowView(DetailView):
+class AttendeeClassEnrollmentShowView(LoginRequiredMixin, DetailView):
     model = AttendeeClassEnrollment
     template_name = "attendee-class-enrollment/show.html"
     context_object_name = "attendee_class_enrollment"
 
 
-class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
+class AttendeeClassEnrollmentCreateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, CreateView
+):
     model = AttendeeClassEnrollment
     form_class = AttendeeClassEnrollmentForm
     template_name = "attendee-class-enrollment/form.html"
@@ -240,7 +251,9 @@ class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     service_method = "assign_attendee_to_class"
 
 
-class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
+class AttendeeClassEnrollmentUpdateView(
+    LoginRequiredMixin, SchedulingServiceFormMixin, UpdateView
+):
     model = AttendeeClassEnrollment
     form_class = AttendeeClassEnrollmentForm
     template_name = "attendee-class-enrollment/form.html"
@@ -257,7 +270,7 @@ class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
         return kwargs
 
 
-class AttendeeClassEnrollmentDeleteView(DeleteView):
+class AttendeeClassEnrollmentDeleteView(LoginRequiredMixin, DeleteView):
     model = AttendeeClassEnrollment
     template_name = "attendee-class-enrollment/confirm_delete.html"
     success_url = reverse_lazy("enrollments:attendee_class:index")

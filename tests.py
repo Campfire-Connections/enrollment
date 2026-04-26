@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
+from django.urls import reverse
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -163,6 +164,7 @@ class FacultyPermissionTests(EnrollmentScenarioBase):
                 username="faculty.admin",
                 password="pass12345",
                 user_type=User.UserType.FACULTY,
+                is_staff=True,
             )
             self.staff_user = User.objects.create_user(
                 username="faculty.staff",
@@ -232,6 +234,27 @@ class FacultyPermissionTests(EnrollmentScenarioBase):
         request.user = self.staff_user
         view.request = request
         self.assertFalse(view.test_func())
+
+    def test_faction_enrollment_index_requires_login(self):
+        url = reverse(
+            "factions:enrollments:index",
+            kwargs={"faction_slug": self.faction.slug},
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response["Location"])
+
+    def test_availability_dashboard_json_export(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(
+            reverse("enrollments:availability"),
+            {"format": "json"},
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("summary", payload)
+        self.assertIn("issues", payload)
+        self.assertIn("holds", payload)
 
     def _create_attendee_profile(self, username):
         with mute_profile_signals():
