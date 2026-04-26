@@ -151,7 +151,8 @@ class SchedulingService:
         if not faculty_class_enrollment.pk:
             return
         enrollment_id = faculty_class_enrollment.pk
-        faculty_class_enrollment.delete()
+        with transaction.atomic():
+            faculty_class_enrollment.delete()
         self._log("faculty.drop_class", faculty_class_enrollment_id=enrollment_id)
 
     def swap_attendee_class(
@@ -179,7 +180,8 @@ class SchedulingService:
         enrollment.faculty = faculty
         enrollment.facility_class_enrollment = facility_class_enrollment
         enrollment.faculty_enrollment = faculty_enrollment
-        enrollment = self._persist(enrollment)
+        with transaction.atomic():
+            enrollment = self._persist(enrollment)
         self._log(
             "faculty.assign_class",
             faculty_id=getattr(faculty, "id", None),
@@ -219,7 +221,8 @@ class SchedulingService:
             enrollment.name = (
                 f"{attendee_name} ({week_label})" if week_label else attendee_name
             )
-        enrollment = self._persist(enrollment)
+        with transaction.atomic():
+            enrollment = self._persist(enrollment)
         self._log(
             "attendee.schedule",
             attendee_id=getattr(attendee, "id", None),
@@ -313,7 +316,8 @@ class SchedulingService:
             enrollment.name = (
                 f"{leader_name} ({week_label})" if week_label else leader_name
             )
-        enrollment = self._persist(enrollment)
+        with transaction.atomic():
+            enrollment = self._persist(enrollment)
         self._log(
             "leader.schedule",
             leader_id=getattr(leader, "id", None),
