@@ -31,6 +31,8 @@ portals.
   audit-side effects.
 - Keep the seed data (`core/management/commands/seed_test_data.py`) in sync with any schema
   changes to these models so that developer refreshes continue to work.
+- Week and period list/manage pages use the shared list/manage shells; scoped create actions
+  should only appear when the required facility enrollment and week context are present.
 
 ## Tests
 
