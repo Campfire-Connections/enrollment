@@ -1,10 +1,23 @@
 # enrollment/urls.py
 
 from django.urls import path, include
+from enrollment.views.enrollment import MyScheduleView
+from enrollment.views.availability import AvailabilityDashboardView, AvailabilityHoldView
 
 app_name = "enrollments"
 
 urlpatterns = [
+    path(
+        "enrollments/availability/",
+        AvailabilityDashboardView.as_view(),
+        name="availability",
+    ),
+    path(
+        "enrollments/availability/<str:kind>/<int:pk>/hold/",
+        AvailabilityHoldView.as_view(),
+        name="availability_hold",
+    ),
+    path("enrollments/my-schedule/", MyScheduleView.as_view(), name="my_schedule"),
     path(
         "enrollments/facilities/",
         include("enrollment.urls.facility", namespace="facility"),

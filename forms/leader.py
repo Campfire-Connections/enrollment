@@ -3,7 +3,6 @@ from django.utils.timezone import now
 
 from ..models.leader import LeaderEnrollment
 from ..models.faction import FactionEnrollment
-from ..models.temporal import Week
 from facility.models.quarters import Quarters
 
 
@@ -25,27 +24,32 @@ class LeaderEnrollmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         """
-        Customize the form initialization to dynamically set querysets based on 
+        Customize the form initialization to dynamically set querysets based on
         additional context (e.g., user or other parameters).
         """
-        # Retrieve the current user from kwargs (if provided).
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
-        # Dynamically filter faction_enrollment based on the current year.
-        self.fields["faction_enrollment"].queryset = FactionEnrollment.objects.filter(
+        faction_enrollments = FactionEnrollment.objects.with_related().filter(
             start__year__gte=now().year,
             start__year__lte=now().year + 1,
         )
+        leader_profile = getattr(user, "leaderprofile_profile", None) if user else None
+        if leader_profile and leader_profile.faction_id:
+            faction_enrollments = faction_enrollments.filter(
+                faction=leader_profile.faction
+            )
+        self.fields["faction_enrollment"].queryset = faction_enrollments
 
-        # Dynamically filter quarters based on the user's faction (if available).
-        if user and hasattr(user, "leaderprofile_profile"):
-            faction = user.leaderprofile_profile.faction
-            self.fields["quarters"].queryset = Quarters.objects.filter(faction=faction)
+        faction_enrollment = self._selected_faction_enrollment()
+        if faction_enrollment:
+            self.fields["quarters"].queryset = Quarters.objects.filter(
+                facility=faction_enrollment.facility_enrollment.facility,
+                capacity__gt=0,
+            )
 
-        # Optionally, set an initial value for leader if available.
-        if user:
-            self.fields["leader"].initial = user.leaderprofile_profile
+        if leader_profile:
+            self.fields["leader"].initial = leader_profile
 
     def clean(self):
         """
@@ -57,9 +61,30 @@ class LeaderEnrollmentForm(forms.ModelForm):
         faction_enrollment = cleaned_data.get("faction_enrollment")
         quarters = cleaned_data.get("quarters")
         if faction_enrollment and quarters:
-            if faction_enrollment.facility != quarters.facility:
-                self.add_error("quarters", "Selected quarters do not match the facility enrollment.")
+            facility = faction_enrollment.facility_enrollment.facility
+            if facility != quarters.facility:
+                self.add_error(
+                    "quarters",
+                    "Selected quarters do not match the facility enrollment.",
+                )
 
         return cleaned_data
 
-    
+    def _selected_faction_enrollment(self):
+        if self.instance.pk:
+            return self.instance.faction_enrollment
+        value = self.data.get("faction_enrollment") if self.data else None
+        if value:
+            try:
+                return FactionEnrollment.objects.with_related().get(pk=value)
+            except (FactionEnrollment.DoesNotExist, ValueError, TypeError):
+                return None
+        value = self.initial.get("faction_enrollment")
+        if isinstance(value, FactionEnrollment):
+            return value
+        if value:
+            try:
+                return FactionEnrollment.objects.with_related().get(pk=value)
+            except (FactionEnrollment.DoesNotExist, ValueError, TypeError):
+                return None
+        return None

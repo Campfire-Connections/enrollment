@@ -1,6 +1,5 @@
 # enrollment/views/enrollment.py
 
-from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 
@@ -92,16 +91,40 @@ class MyScheduleView(LoginRequiredMixin, BaseTemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Fetch the active enrollment for the current user
-        active_enrollment = get_object_or_404(
-            ActiveEnrollment.objects.with_related(), user=self.request.user
+        active_enrollment = (
+            ActiveEnrollment.objects.with_related()
+            .filter(user=self.request.user)
+            .first()
         )
 
         context["active_enrollment"] = active_enrollment
-        context["attendee_enrollment"] = active_enrollment.attendee_enrollment
+        if not active_enrollment:
+            return context
+
+        attendee_enrollment = active_enrollment.attendee_enrollment
+        faculty_enrollment = active_enrollment.faculty_enrollment
+        context["attendee_enrollment"] = attendee_enrollment
         context["leader_enrollment"] = active_enrollment.leader_enrollment
         context["faction_enrollment"] = active_enrollment.faction_enrollment
-        context["faculty_enrollment"] = active_enrollment.faculty_enrollment
+        context["faculty_enrollment"] = faculty_enrollment
         context["facility_enrollment"] = active_enrollment.facility_enrollment
+        context["attendee_classes"] = (
+            attendee_enrollment.class_enrollments.select_related(
+                "facility_class_enrollment__facility_class",
+                "facility_class_enrollment__period",
+                "facility_class_enrollment__department",
+            )
+            if attendee_enrollment
+            else []
+        )
+        context["faculty_classes"] = (
+            faculty_enrollment.class_enrollments.select_related(
+                "facility_class_enrollment__facility_class",
+                "facility_class_enrollment__period",
+                "facility_class_enrollment__department",
+            )
+            if faculty_enrollment
+            else []
+        )
 
         return context

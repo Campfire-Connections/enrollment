@@ -1,0 +1,111 @@
+{% extends "base/layout.html" %}
+
+{% block content %}
+<section class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small mb-1">Scheduling operations</p>
+      <h1 class="mb-0">Availability Health</h1>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-danger">{{ summary.issues }} drift issues</span>
+      <span class="badge bg-warning text-dark">{{ summary.holds }} holds</span>
+      <span class="badge bg-secondary">{{ summary.full }} full resources</span>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header">
+          <strong>Reconciliation Issues</strong>
+        </div>
+        <div class="card-body">
+          {% if issues %}
+            <div class="list-group list-group-flush">
+              {% for issue in issues %}
+                <div class="list-group-item px-0">
+                  <div class="d-flex justify-content-between gap-3">
+                    <strong>{{ issue.label }}</strong>
+                    <span class="badge {% if issue.severity == 'critical' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                      {{ issue.kind }}
+                    </span>
+                  </div>
+                  <div class="small text-muted">Expected: {{ issue.expected }}</div>
+                  <div class="small text-muted">Actual: {{ issue.actual }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No availability drift detected.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header">
+          <strong>Active Holds</strong>
+        </div>
+        <div class="card-body">
+          {% if holds %}
+            <div class="list-group list-group-flush">
+              {% for hold in holds %}
+                <form class="list-group-item px-0" method="post" action="{% url 'enrollments:availability_hold' hold.kind hold.availability.pk %}">
+                  {% csrf_token %}
+                  <div class="d-flex justify-content-between gap-3 mb-2">
+                    <strong>{{ hold.label }}</strong>
+                    <span class="badge bg-warning text-dark">{{ hold.kind }}</span>
+                  </div>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">On hold</span>
+                    <input class="form-control" type="number" min="0" max="{{ hold.availability.capacity }}" name="on_hold" value="{{ hold.availability.on_hold }}">
+                    <button class="btn btn-outline-primary" type="submit">Update</button>
+                  </div>
+                  <div class="small text-muted mt-1">
+                    Reserved {{ hold.availability.reserved }} / Capacity {{ hold.availability.capacity }}
+                  </div>
+                </form>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No active holds.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <strong>Full Resources</strong>
+        </div>
+        <div class="card-body">
+          {% if full %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+              {% for item in full %}
+                <div class="col">
+                  <div class="border rounded p-3 h-100">
+                    <div class="d-flex justify-content-between gap-3">
+                      <strong>{{ item.label }}</strong>
+                      <span class="badge bg-secondary">{{ item.kind }}</span>
+                    </div>
+                    <div class="small text-muted">
+                      Reserved {{ item.availability.reserved }},
+                      Hold {{ item.availability.on_hold }},
+                      Capacity {{ item.availability.capacity }}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No resources are currently full.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock content %}

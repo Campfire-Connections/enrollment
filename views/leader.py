@@ -50,8 +50,13 @@ class CreateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseCreateView)
     service_class = SchedulingService
     service_method = "schedule_leader_enrollment"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_success_url(self):
-        faction_slug = self.object.faction.slug
+        faction_slug = self.object.faction_enrollment.faction.slug
         return reverse(
             "factions:leaders:enrollments:index",
             kwargs={
@@ -64,13 +69,18 @@ class CreateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseCreateView)
 class UpdateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseUpdateView):
     model = LeaderEnrollment
     form_class = LeaderEnrollmentForm
-    template_name = "leader_enrollment/form.html"
+    template_name = "leader-enrollment/form.html"
     action = "Edit"
     service_class = SchedulingService
     service_method = "schedule_leader_enrollment"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_success_url(self):
-        faction_slug = self.object.faction.slug
+        faction_slug = self.object.faction_enrollment.faction.slug
         return reverse(
             "factions:leaders:enrollments:index",
             kwargs={
@@ -95,7 +105,7 @@ class DeleteView(BaseDeleteView):
     action = "Delete"
 
     def get_success_url(self):
-        faction_slug = self.object.faction.slug
+        faction_slug = self.object.faction_enrollment.faction.slug
         return reverse(
             "factions:leaders:enrollments:index",
             kwargs={

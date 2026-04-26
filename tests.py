@@ -1,9 +1,13 @@
+import csv
 from datetime import timedelta, time
+from io import StringIO
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework import status
@@ -493,6 +497,46 @@ class AvailabilityTrackingTests(EnrollmentScenarioBase):
 
         availability.refresh_from_db()
         self.assertEqual(availability.reserved, 0)
+
+    def test_reconcile_availability_repairs_faction_drift(self):
+        self._create_faction_enrollment(name="Drift Week")
+        availability = QuartersWeekAvailability.objects.get(
+            week=self.week,
+            quarters=self.quarters,
+        )
+        availability.reserved = 0
+        availability.save(update_fields=["reserved", "updated_at"])
+
+        output = StringIO()
+        call_command("reconcile_availability", "--fix", stdout=output)
+
+        availability.refresh_from_db()
+        self.assertEqual(availability.reserved, self.quarters.capacity)
+        self.assertIn("Repaired", output.getvalue())
+
+    def test_attendee_import_dry_run_does_not_commit(self):
+        faction_enrollment = self._create_faction_enrollment(name="Import Week")
+        attendee = self._create_attendee_profile("attendee.import")
+        with NamedTemporaryFile("w", newline="", suffix=".csv") as csv_file:
+            writer = csv.DictWriter(
+                csv_file,
+                fieldnames=["attendee", "faction_enrollment", "quarters", "role"],
+            )
+            writer.writeheader()
+            writer.writerow(
+                {
+                    "attendee": attendee.user.username,
+                    "faction_enrollment": faction_enrollment.pk,
+                    "quarters": self.quarters.pk,
+                    "role": "Camper",
+                }
+            )
+            csv_file.flush()
+            output = StringIO()
+            call_command("import_attendee_enrollments", csv_file.name, stdout=output)
+
+        self.assertFalse(attendee.attendee_enrollments.exists())
+        self.assertIn("Validated 1 attendee enrollment", output.getvalue())
 
     def test_faculty_enrollment_update_does_not_reserve_again(self):
         staff_quarters = Quarters.objects.create(

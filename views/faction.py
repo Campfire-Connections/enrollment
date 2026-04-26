@@ -80,6 +80,11 @@ class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
         slug = self.kwargs.get("faction_slug") or self.kwargs.get("slug")
         return get_object_or_404(Faction, slug=slug)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["faction"] = self._get_faction()
+        return kwargs
+
     def get_service_kwargs(self, form):
         faction = self._get_faction()
         week = form.cleaned_data["week"]
@@ -107,6 +112,11 @@ class FactionEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     service_method = "schedule_faction_enrollment"
     pk_url_kwarg = "enrollment_pk"
     slug_url_kwarg = "enrollment_slug"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["faction"] = self.get_object().faction
+        return kwargs
 
     def form_valid(self, form):
         self.object = self.get_object()
