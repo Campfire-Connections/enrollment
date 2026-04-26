@@ -191,7 +191,7 @@ class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeEnrollment
     fields = "__all__"
     template_name = "attendee-enrollment/form.html"
-    success_url = reverse_lazy("faction:attendee_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee:index")
     service_class = SchedulingService
     service_method = "schedule_attendee_enrollment"
 
@@ -200,7 +200,7 @@ class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeEnrollment
     fields = "__all__"
     template_name = "attendee-enrollment/form.html"
-    success_url = reverse_lazy("faction:attendee_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee:index")
     service_method = "schedule_attendee_enrollment"
 
     def form_valid(self, form):
@@ -216,7 +216,7 @@ class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
 class AttendeeEnrollmentDeleteView(DeleteView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("faction:attendee_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee:index")
 
 
 class AttendeeClassEnrollmentIndexView(ListView):
@@ -235,7 +235,7 @@ class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeClassEnrollment
     fields = "__all__"
     template_name = "attendee-class-enrollment/form.html"
-    success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee_class:index")
     service_class = SchedulingService
     service_method = "assign_attendee_to_class"
 
@@ -244,7 +244,7 @@ class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeClassEnrollment
     fields = "__all__"
     template_name = "attendee-class-enrollment/form.html"
-    success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee_class:index")
     service_method = "assign_attendee_to_class"
 
     def form_valid(self, form):
@@ -260,7 +260,7 @@ class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
 class AttendeeClassEnrollmentDeleteView(DeleteView):
     model = AttendeeClassEnrollment
     template_name = "attendee-class-enrollment/confirm_delete.html"
-    success_url = reverse_lazy("faction:attendee_class_enrollment_index")
+    success_url = reverse_lazy("enrollments:attendee_class:index")
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()

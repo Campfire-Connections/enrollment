@@ -35,15 +35,8 @@ urlpatterns = [
         AttendeeEnrollmentShowView.as_view(),
         name="show",
     ),
-    path(
-        "update/",
-        AttendeeEnrollmentUpdateView.as_view(),
-        name="update",
-    ),
-
-    path(
-        "delete/",
-        AttendeeEnrollmentDeleteView.as_view(),
-        name="delete",
-    ),
+    path("<int:pk>/update/", AttendeeEnrollmentUpdateView.as_view(), name="update"),
+    path("<slug:slug>/update/", AttendeeEnrollmentUpdateView.as_view(), name="update"),
+    path("<int:pk>/delete/", AttendeeEnrollmentDeleteView.as_view(), name="delete"),
+    path("<slug:slug>/delete/", AttendeeEnrollmentDeleteView.as_view(), name="delete"),
 ]

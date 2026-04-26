@@ -34,6 +34,10 @@ urlpatterns = [
         include("enrollment.urls.attendee", namespace="attendee"),
     ),
     path(
+        "enrollments/attendee-classes/",
+        include("enrollment.urls.attendee_class", namespace="attendee_class"),
+    ),
+    path(
         "enrollments/organizations/",
         include("enrollment.urls.organization", namespace="organization"),
     ),
