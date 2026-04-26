@@ -1,5 +1,8 @@
+import csv
+
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import TemplateView
@@ -23,10 +26,51 @@ AVAILABILITY_MODELS = {
 class AvailabilityDashboardView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
     template_name = "availability/dashboard.html"
 
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("format") == "csv":
+            return self._csv_response()
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(build_availability_status())
         return context
+
+    def _csv_response(self):
+        status = build_availability_status()
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            'attachment; filename="availability-health.csv"'
+        )
+        writer = csv.writer(response)
+        writer.writerow(["section", "kind", "label", "expected", "actual"])
+        for issue in status["issues"]:
+            writer.writerow(
+                ["issue", issue.kind, issue.label, issue.expected, issue.actual]
+            )
+        for hold in status["holds"]:
+            availability = hold["availability"]
+            writer.writerow(
+                [
+                    "hold",
+                    hold["kind"],
+                    hold["label"],
+                    f"capacity={availability.capacity}",
+                    f"on_hold={availability.on_hold}",
+                ]
+            )
+        for item in status["full"]:
+            availability = item["availability"]
+            writer.writerow(
+                [
+                    "full",
+                    item["kind"],
+                    item["label"],
+                    f"capacity={availability.capacity}",
+                    f"reserved={availability.reserved}, on_hold={availability.on_hold}",
+                ]
+            )
+        return response
 
 
 class AvailabilityHoldView(LoginRequiredMixin, StaffRequiredMixin, View):
