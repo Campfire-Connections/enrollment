@@ -14,13 +14,37 @@ from enrollment.services import SchedulingService
 class FactionEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = FactionEnrollment
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "facility_enrollment",
+            "start",
+            "end",
+            "faction",
+            "week",
+            "quarters",
+            "slug",
+        ]
+        read_only_fields = ["id", "slug"]
 
 
 class LeaderEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaderEnrollment
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "start",
+            "end",
+            "leader",
+            "faction_enrollment",
+            "quarters",
+            "role",
+            "slug",
+        ]
+        read_only_fields = ["id", "slug"]
         extra_kwargs = {
             "name": {"required": False},
             "start": {"required": False},
@@ -39,7 +63,19 @@ class LeaderEnrollmentSerializer(serializers.ModelSerializer):
 class AttendeeEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendeeEnrollment
-        fields = "__all__"
+        fields = [
+            "id",
+            "name",
+            "description",
+            "start",
+            "end",
+            "attendee",
+            "faction_enrollment",
+            "quarters",
+            "role",
+            "slug",
+        ]
+        read_only_fields = ["id", "slug"]
         extra_kwargs = {
             "name": {"required": False},
             "start": {"required": False},

@@ -19,6 +19,7 @@ from ..models.attendee import AttendeeEnrollment
 from ..models.attendee_class import AttendeeClassEnrollment
 from ..models.facility import FacilityEnrollment
 from ..forms.faction import FactionEnrollmentForm
+from ..forms.attendee import AttendeeClassEnrollmentForm, AttendeeEnrollmentForm
 from ..services import SchedulingService
 from ..mixin import SchedulingServiceFormMixin
 from ..tables.faction import FactionEnrollmentTable
@@ -64,7 +65,6 @@ class FactionEnrollmentShowView(DetailView):
 
 class FactionEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = FactionEnrollment
-    #fields = "__all__"
     template_name = "faction-enrollment/form.html"
     success_url = reverse_lazy("factions:enrollments:index")
     form_class = FactionEnrollmentForm
@@ -189,7 +189,7 @@ class AttendeeEnrollmentShowView(DetailView):
 
 class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeEnrollment
-    fields = "__all__"
+    form_class = AttendeeEnrollmentForm
     template_name = "attendee-enrollment/form.html"
     success_url = reverse_lazy("enrollments:attendee:index")
     service_class = SchedulingService
@@ -198,7 +198,7 @@ class AttendeeEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
 
 class AttendeeEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeEnrollment
-    fields = "__all__"
+    form_class = AttendeeEnrollmentForm
     template_name = "attendee-enrollment/form.html"
     success_url = reverse_lazy("enrollments:attendee:index")
     service_method = "schedule_attendee_enrollment"
@@ -233,7 +233,7 @@ class AttendeeClassEnrollmentShowView(DetailView):
 
 class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
     model = AttendeeClassEnrollment
-    fields = "__all__"
+    form_class = AttendeeClassEnrollmentForm
     template_name = "attendee-class-enrollment/form.html"
     success_url = reverse_lazy("enrollments:attendee_class:index")
     service_class = SchedulingService
@@ -242,7 +242,7 @@ class AttendeeClassEnrollmentCreateView(SchedulingServiceFormMixin, CreateView):
 
 class AttendeeClassEnrollmentUpdateView(SchedulingServiceFormMixin, UpdateView):
     model = AttendeeClassEnrollment
-    fields = "__all__"
+    form_class = AttendeeClassEnrollmentForm
     template_name = "attendee-class-enrollment/form.html"
     success_url = reverse_lazy("enrollments:attendee_class:index")
     service_method = "assign_attendee_to_class"
