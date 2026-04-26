@@ -41,14 +41,14 @@ class PeriodTable(BaseTable):
     urls = {
         "add": {
             "kwargs": {
-                "facility_slug": "facility__slug",
+                "facility_slug": "week__facility_enrollment__facility__slug",
                 "facility_enrollment_slug": "week__facility_enrollment__slug",
                 "week_slug": "week__slug",
             }
         },
         "show": {
             "kwargs": {
-                "facility_slug": "facility__slug",
+                "facility_slug": "week__facility_enrollment__facility__slug",
                 "facility_enrollment_slug": "week__facility_enrollment__slug",
                 "week_slug": "week__slug",
                 "period_slug": "slug",
@@ -56,7 +56,7 @@ class PeriodTable(BaseTable):
         },
         "edit": {
             "kwargs": {
-                "facility_slug": "facility__slug",
+                "facility_slug": "week__facility_enrollment__facility__slug",
                 "facility_enrollment_slug": "week__facility_enrollment__slug",
                 "week_slug": "week__slug",
                 "period_slug": "slug",
@@ -64,7 +64,7 @@ class PeriodTable(BaseTable):
         },
         "delete": {
             "kwargs": {
-                "facility_slug": "facility__slug",
+                "facility_slug": "week__facility_enrollment__facility__slug",
                 "facility_enrollment_slug": "week__facility_enrollment__slug",
                 "week_slug": "week__slug",
                 "period_slug": "slug",

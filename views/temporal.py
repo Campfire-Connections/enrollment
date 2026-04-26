@@ -159,8 +159,14 @@ class WeekDeleteView(BaseDeleteView):
 
 class PeriodIndexView(BaseTableListView):
     model = Period
-    template_name = "period/index.html"
+    template_name = "period/list.html"
     context_object_name = "periods"
+    table_class = PeriodTable
+
+    def get_queryset(self):
+        return Period.objects.select_related("week", "week__facility_enrollment").order_by(
+            "week__start", "start", "name"
+        )
 
 
 class PeriodShowView(BaseDetailView):
