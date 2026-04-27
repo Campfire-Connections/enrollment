@@ -16,8 +16,6 @@ from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
 from core.utils import is_faculty_admin, is_department_admin
 
 from facility.models.facility import Facility
-from facility.tables.faculty import FacultyTable
-from facility.models.faculty import FacultyProfile
 
 from ..models.facility import FacilityEnrollment
 from ..models.faculty import FacultyEnrollment
@@ -33,8 +31,6 @@ from ..forms.faculty import FacultyEnrollmentForm
 from ..forms.faculty_class import (
     FacultyClassEnrollmentForm as FacultyClassAssignmentForm,
 )
-from ..models.temporal import Week
-from ..tables.week import WeekTable
 from ..tables.facility import FacilityEnrollmentTable
 from ..tables.facility_class import FacilityClassEnrollmentTable
 from ..tables.faculty import FacultyEnrollmentTable
@@ -43,6 +39,12 @@ from ..tables.faculty_class import (
 )
 from ..services import SchedulingService
 from ..mixin import SchedulingServiceFormMixin
+from ..selectors import (
+    facility_enrollment_detail_tables_config,
+    facility_enrollment_index_queryset,
+    facility_enrollment_manage_tables_config,
+    get_facility_enrollment_with_schedule,
+)
 
 
 class FacilityEnrollmentManageView(LoginRequiredMixin, PortalPermissionMixin, BaseManageView):
@@ -63,20 +65,7 @@ class FacilityEnrollmentManageView(LoginRequiredMixin, PortalPermissionMixin, Ba
         return super().test_func() and is_faculty_admin(user)
 
     def get_tables_config(self):
-        enrollment = self.get_enrollment()
-        return {
-            "weeks": {
-                "class": WeekTable,
-                "queryset": Week.objects.filter(facility_enrollment=enrollment),
-                "paginate_by": 7,
-            },
-            "faculty": {
-                "class": FacultyTable,
-                "queryset": FacultyProfile.objects.filter(
-                    faculty_enrollments__facility_enrollment=enrollment,
-                ).select_related("user"),
-            },
-        }
+        return facility_enrollment_manage_tables_config(self.get_enrollment())
 
     def get_create_url(self, table):
         facility = self.get_facility()
@@ -98,10 +87,7 @@ class FacilityEnrollmentManageView(LoginRequiredMixin, PortalPermissionMixin, Ba
     def get_enrollment(self):
         if self.enrollment is None:
             enrollment_slug = self.kwargs.get("facility_enrollment_slug")
-            self.enrollment = get_object_or_404(
-                FacilityEnrollment.objects.with_schedule(),
-                slug=enrollment_slug,
-            )
+            self.enrollment = get_facility_enrollment_with_schedule(enrollment_slug)
         return self.enrollment
 
 
@@ -113,18 +99,15 @@ class FacilityEnrollmentIndexView(BaseTableListView):
     facility = None
 
     def get_queryset(self):
-        qs = FacilityEnrollment.objects.with_schedule()
         facility_slug = self.kwargs.get("facility_slug")
         if facility_slug:
             self.facility = get_object_or_404(Facility, slug=facility_slug)
-            qs = qs.filter(facility=self.facility)
         else:
             # fallback to user's facility if faculty
             profile = getattr(self.request.user, "facultyprofile_profile", None)
             if profile and profile.facility_id:
                 self.facility = profile.facility
-                qs = qs.filter(facility=self.facility)
-        return qs
+        return facility_enrollment_index_queryset(self.facility)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -141,16 +124,10 @@ class FacilityEnrollmentShowView(BaseDetailView):
     slug_url_kwarg = "facility_enrollment_slug"
 
     def get_queryset(self):
-        return FacilityEnrollment.objects.with_schedule()
+        return facility_enrollment_index_queryset()
 
     def get_tables_config(self):
-        enrollment = self.get_object()
-        return {
-            "weeks_table": {
-                "class": WeekTable,
-                "queryset": Week.objects.filter(facility_enrollment=enrollment),
-            },
-        }
+        return facility_enrollment_detail_tables_config(self.get_object())
 
 
 class FacilityEnrollmentCreateView(BaseCreateView):

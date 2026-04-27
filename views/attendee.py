@@ -1,13 +1,10 @@
 # enrollment/views/attendee.py
 
-from django.contrib.auth import get_user_model
-
 from core.views.base import BaseTableListView
 
 from ..models.attendee import AttendeeEnrollment
 from ..tables.attendee import AttendeeEnrollmentTable
-
-User = get_user_model()
+from ..selectors import attendee_enrollments_for_attendee_slug, get_attendee_by_slug
 
 
 class AttendeeEnrollmentIndexByAttendeeView(BaseTableListView):
@@ -21,14 +18,10 @@ class AttendeeEnrollmentIndexByAttendeeView(BaseTableListView):
     context_object_name = "attendee_enrollments"
 
     def get_queryset(self):
-        attendee_slug = self.kwargs.get("slug")
-        return (
-            AttendeeEnrollment.objects.filter(attendee__user__slug=attendee_slug)
-            .select_related("attendee", "faction_enrollment", "quarters")
-        )
+        return attendee_enrollments_for_attendee_slug(self.kwargs.get("slug"))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         attendee_slug = self.kwargs.get("slug")
-        context["attendee"] = User.objects.get(slug=attendee_slug)
+        context["attendee"] = get_attendee_by_slug(attendee_slug)
         return context

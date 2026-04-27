@@ -17,20 +17,24 @@ from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
 from core.utils import is_faculty_admin
 
 from ..models.temporal import Week, Period
-from ..models.faction import FactionEnrollment
 from ..models.facility import FacilityEnrollment
 from ..tables.week import WeekTable
-from ..tables.period import PeriodsByWeekTable, PeriodTable
-from ..tables.faction import FactionEnrollmentTable
+from ..tables.period import PeriodTable
 from ..forms.period import PeriodForm
+from ..selectors import (
+    available_faction_quarters_for_week,
+    period_index_queryset,
+    week_detail_tables_config,
+    week_manage_tables_config,
+    weeks_for_facility_enrollment_id,
+)
 
-from facility.models.quarters import Quarters, QuartersType
 from facility.models.facility import Facility
 
 
 def load_weeks(request):
     facility_enrollment_id = request.GET.get("facility_enrollment")
-    weeks = Week.objects.filter(facility_enrollment_id=facility_enrollment_id).all()
+    weeks = weeks_for_facility_enrollment_id(facility_enrollment_id)
     return JsonResponse(list(weeks.values("id", "name")), safe=False)
 
 
@@ -39,21 +43,10 @@ def load_quarters(request):
     facility_enrollment_id = request.GET.get("facility_enrollment")
 
     facility_enrollment = FacilityEnrollment.objects.get(id=facility_enrollment_id)
-    facility = facility_enrollment.facility
-
-    faction_quarters_type = QuartersType.objects.get(slug="faction")
-
-    available_quarters = Quarters.objects.filter(
-        facility=facility,
-        type=faction_quarters_type,
-    )
-
-    used_quarters = FactionEnrollment.objects.filter(
+    available_quarters = available_faction_quarters_for_week(
         week_id=week_id,
-        week__facility_enrollment=facility_enrollment,
-    ).values_list("quarters_id", flat=True)
-
-    available_quarters = available_quarters.exclude(id__in=used_quarters)
+        facility_enrollment=facility_enrollment,
+    )
 
     return JsonResponse(list(available_quarters.values("id", "name")), safe=False)
 
@@ -70,19 +63,7 @@ class WeekManageView(LoginRequiredMixin, PortalPermissionMixin, BaseManageView):
         return super().test_func() and is_faculty_admin(self.request.user)
 
     def get_tables_config(self):
-        week = self.get_week()
-        return {
-            "periods": {
-                "class": PeriodsByWeekTable,
-                "queryset": Period.objects.filter(week=week),
-                "paginate_by": 5,
-            },
-            "faction_enrollments": {
-                "class": FactionEnrollmentTable,
-                "queryset": FactionEnrollment.objects.filter(week=week),
-                "paginate_by": 10,
-            },
-        }
+        return week_manage_tables_config(self.get_week())
 
     def get_facility(self):
         if self.facility is None:
@@ -124,13 +105,7 @@ class WeekShowView(BaseDetailView):
         context.update(
             build_tables_from_config(
                 self.request,
-                {
-                    "periods_table": {
-                        "class": PeriodTable,
-                        "queryset": Period.objects.filter(week=self.get_object()),
-                        "paginate_by": None,
-                    }
-                },
+                week_detail_tables_config(self.get_object()),
                 default_paginate=None,
             )
         )
@@ -164,9 +139,7 @@ class PeriodIndexView(BaseTableListView):
     table_class = PeriodTable
 
     def get_queryset(self):
-        return Period.objects.select_related("week", "week__facility_enrollment").order_by(
-            "week__start", "start", "name"
-        )
+        return period_index_queryset()
 
 
 class PeriodShowView(BaseDetailView):
