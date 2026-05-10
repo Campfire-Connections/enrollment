@@ -1,7 +1,88 @@
 {% extends 'base/show.html' %}
 
 {% block title_text %}{{ facility_enrollment.name }}{% endblock title_text %}
-
+{% block object_name %}{{ object.name }}{% endblock object_name %}
 {% block object_identifier %}{% endblock object_identifier %}
-
 {% block object_details %}{{ object.facility | title }}{% endblock object_details %}
+
+{% block object_edit_action %}
+{% if can_manage_facility_enrollment_page %}
+<a class="btn btn-outline-primary" href="{% url 'facilities:enrollments:edit' facility_slug=object.facility.slug facility_enrollment_slug=object.slug %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_edit_action %}
+
+{% block object_secondary_actions %}
+<a class="btn btn-outline-secondary" href="{% url 'facilities:show' facility_slug=object.facility.slug %}">
+    <span class="fas fa-building" aria-hidden="true"></span>
+    Facility
+</a>
+{% if can_manage_facility_enrollment_page %}
+<a class="btn btn-outline-secondary" href="{% url 'facilities:enrollments:manage' facility_slug=object.facility.slug facility_enrollment_slug=object.slug %}">
+    <span class="fas fa-clipboard-list" aria-hidden="true"></span>
+    Manage
+</a>
+{% endif %}
+{% endblock object_secondary_actions %}
+
+{% block object_nav_tabs %}
+    {{ block.super }}
+    <li class="nav-item" role="presentation">
+        <a href="#datesTab" id="tabs_tabDates" class="nav-link" data-bs-toggle="tab">Dates</a>
+    </li>
+{% endblock object_nav_tabs %}
+
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Facility Enrollment Summary</h2>
+    <div class="profile-stat-grid">
+        <div class="metric-card">
+            <span class="metric-value">{{ object.weeks.count }}</span>
+            <span class="metric-label">Weeks</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ object.faction_enrollments.count }}</span>
+            <span class="metric-label">Faction Enrollments</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ object.status|title }}</span>
+            <span class="metric-label">Status</span>
+        </div>
+    </div>
+    <dl class="detail-list">
+        <dt>Facility</dt>
+        <dd>{{ object.facility.name }}</dd>
+        <dt>Organization Enrollment</dt>
+        <dd>{{ object.organization_enrollment.name }}</dd>
+        <dt>Description</dt>
+        <dd>{{ object.description|default:"No description available." }}</dd>
+    </dl>
+</div>
+{% endblock card_body_overview %}
+
+{% block card_body_wrapper %}
+    {{ block.super }}
+    <div id="datesTab" class="tab-pane fade">
+        <div class="card-body" id="datesCard">
+            <h2 class="no-border card-title section-title">Dates</h2>
+            <ol class="timeline-list">
+                <li>
+                    <span class="timeline-marker" aria-hidden="true"></span>
+                    <div>
+                        <strong>Enrollment starts</strong>
+                        <span>{{ object.start|date:"M d, Y" }}</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="timeline-marker" aria-hidden="true"></span>
+                    <div>
+                        <strong>Enrollment ends</strong>
+                        <span>{{ object.end|date:"M d, Y" }}</span>
+                    </div>
+                </li>
+            </ol>
+        </div>
+    </div>
+{% endblock card_body_wrapper %}

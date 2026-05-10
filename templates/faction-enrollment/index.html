@@ -1,31 +1,5 @@
-{% extends "base/layout.html" %}
+{% extends "base/list.html" %}
 
 {% block title_text %}Faction Enrollments{% endblock %}
-
-{% block stylesheets_local %}
-    {{ block.super }}
-    {% load static %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/table.css' %}">
-{% endblock stylesheets_local %}
-
-{% block content %}
-<div class="bodyHeader clearfix d-flex justify-content-between align-items-center" style="margin-bottom:8px;">
-    <h1 class="mb-0">Faction Enrollments</h1>
-    {% if faction %}
-        <a class="btn btn-primary" href="{% url 'factions:enrollments:new' faction_slug=faction.slug %}">
-            <i class="fas fa-plus"></i> Add Enrollment
-        </a>
-    {% endif %}
-</div>
-
-<div class="card">
-    <div class="card-body">
-        {% if table %}
-            {% load django_tables2 %}
-            {% render_table table %}
-        {% else %}
-            <p class="mb-0">No enrollments found.</p>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
+{% block new_label %}Add Enrollment{% endblock new_label %}
+{% block new_url %}{% if faction %}{% url 'factions:enrollments:new' faction_slug=faction.slug %}{% else %}#{% endif %}{% endblock new_url %}

@@ -14,7 +14,7 @@ class AttendeeEnrollmentIndexByAttendeeView(BaseTableListView):
 
     model = AttendeeEnrollment
     table_class = AttendeeEnrollmentTable
-    template_name = "attendee_enrollment/index.html"
+    template_name = "attendee-enrollment/list.html"
     context_object_name = "attendee_enrollments"
 
     def get_queryset(self):

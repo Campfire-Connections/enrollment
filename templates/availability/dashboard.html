@@ -1,15 +1,20 @@
 {% extends "base/layout.html" %}
 
+{% block title_text %}Availability Health{% endblock title_text %}
+
+{% block page_actions %}
+<a class="btn btn-sm btn-outline-secondary" href="?format=csv">Export CSV</a>
+<a class="btn btn-sm btn-outline-secondary" href="?format=json">Export JSON</a>
+{% endblock page_actions %}
+
 {% block content %}
-<section class="container py-4">
+<section class="content-card">
   <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
     <div>
       <p class="text-uppercase text-muted small mb-1">Scheduling operations</p>
-      <h1 class="mb-0">Availability Health</h1>
+      <h2 class="mb-0">Availability Health</h2>
     </div>
     <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-secondary" href="?format=csv">Export CSV</a>
-      <a class="btn btn-sm btn-outline-secondary" href="?format=json">Export JSON</a>
       <span class="badge bg-danger">{{ summary.issues }} drift issues</span>
       <span class="badge bg-warning text-dark">{{ summary.holds }} holds</span>
       <span class="badge bg-secondary">{{ summary.full }} full resources</span>

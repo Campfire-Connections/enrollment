@@ -1,37 +1,124 @@
-<!--facility/templates/facility/show.html-->
 {% extends "base/show.html" %}
 {% load static %}
 {% load render_table from django_tables2 %}
 {% load my_filters %}
 
-{% block title_text %}Week Details{% endblock title_text %}
+{% block stylesheets_local %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/table.css' %}">
+{% endblock stylesheets_local %}
 
-{% block cards %}
-<div id="show">
-    {% block object_details %}
-    <!-- Display basic facility information -->
-    <section class="card">
-        <h3>Week Information</h3>
-        <dl class="row">
-            <dt class="col-sm-3">Name:</dt>
-            <dd class="col-sm-9">{{ week.name | title }}</dd>
+{% block title_text %}{{ week.name|default:"Week Details" }}{% endblock title_text %}
+{% block object_name %}{{ week.name|default:"Week Details" }}{% endblock object_name %}
+{% block object_identifier %}{% if week.facility_enrollment %}{{ week.facility_enrollment.facility.name }}{% endif %}{% endblock object_identifier %}
+{% block object_details %}
+    {{ week.start|date:"M d, Y" }} - {{ week.end|date:"M d, Y" }}
+{% endblock object_details %}
 
-            <dt class="col-sm-3">Description:</dt>
-            <dd class="col-sm-9">{{ week.description }}</dd>
-        </dl>
-    </section>
-    {% endblock object_details %}
+{% block object_edit_action %}
+{% if can_manage_week_page %}
+<a class="btn btn-outline-primary" href="{% url 'enrollments:week:edit' week_slug=week.slug %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_edit_action %}
 
-    {% block related_tables %}
-    <section class="card mt-4">
-        <h2>
-            Periods
-            <a href="#">
-                <i class="fas fa-plus"></i>
-            </a>
-        </h2>
-        {% render_table periods_table %}
-    </section>
-    {% endblock related_tables %}
+{% block object_secondary_actions %}
+{% if can_manage_week_page %}
+<a class="btn btn-primary" href="{% url 'enrollments:week:periods:new' week_slug=week.slug %}">
+    <span class="fas fa-plus" aria-hidden="true"></span>
+    Period
+</a>
+<a class="btn btn-outline-secondary" href="{% url 'enrollments:week:manage' week_slug=week.slug %}">
+    <span class="fas fa-clipboard-list" aria-hidden="true"></span>
+    Manage
+</a>
+{% endif %}
+{% endblock object_secondary_actions %}
+
+{% block object_nav_tabs %}
+    {{ block.super }}
+    <li class="nav-item" role="presentation">
+        <a href="#periodsTab" id="tabs_tabPeriods" class="nav-link" data-bs-toggle="tab">Periods</a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a href="#timelineTab" id="tabs_tabTimeline" class="nav-link" data-bs-toggle="tab">Timeline</a>
+    </li>
+{% endblock object_nav_tabs %}
+
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Week Summary</h2>
+    <div class="profile-stat-grid">
+        <div class="metric-card">
+            <span class="metric-value">{{ periods_table.rows|length|default:0 }}</span>
+            <span class="metric-label">Periods</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ week.start|date:"M d" }}</span>
+            <span class="metric-label">Start</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ week.end|date:"M d" }}</span>
+            <span class="metric-label">End</span>
+        </div>
+    </div>
+    <dl class="detail-list">
+        <dt>Name</dt>
+        <dd>{{ week.name|title }}</dd>
+        <dt>Description</dt>
+        <dd>{{ week.description|default:"No description available." }}</dd>
+        <dt>Facility Enrollment</dt>
+        <dd>{{ week.facility_enrollment|default:"-" }}</dd>
+    </dl>
 </div>
-{% endblock cards %}
+{% endblock card_body_overview %}
+
+{% block card_body_wrapper %}
+    {{ block.super }}
+    <div id="periodsTab" class="tab-pane fade">
+        <div class="card-body" id="periodsCard">
+            <div class="section-heading">
+                <h2 class="no-border card-title section-title">Periods</h2>
+                {% if can_manage_week_page %}
+                <a class="btn btn-sm btn-primary" href="{% url 'enrollments:week:periods:new' week_slug=week.slug %}">
+                    <span class="fas fa-plus" aria-hidden="true"></span>
+                    Add Period
+                </a>
+                {% endif %}
+            </div>
+            {% if periods_table and periods_table.rows|length %}
+                <div class="table-shell" tabindex="0" aria-label="Week periods table">
+                    {% render_table periods_table %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <span class="fas fa-calendar-plus" aria-hidden="true"></span>
+                    <p>No periods have been created for this week.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div id="timelineTab" class="tab-pane fade">
+        <div class="card-body" id="timelineCard">
+            <h2 class="no-border card-title section-title">Timeline</h2>
+            <ol class="timeline-list">
+                <li>
+                    <span class="timeline-marker" aria-hidden="true"></span>
+                    <div>
+                        <strong>Week starts</strong>
+                        <span>{{ week.start|date:"M d, Y" }}</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="timeline-marker" aria-hidden="true"></span>
+                    <div>
+                        <strong>Week ends</strong>
+                        <span>{{ week.end|date:"M d, Y" }}</span>
+                    </div>
+                </li>
+            </ol>
+        </div>
+    </div>
+{% endblock card_body_wrapper %}

@@ -21,6 +21,7 @@ from enrollment.models.availability import (
     QuartersWeekAvailability,
 )
 from enrollment.models.attendee_class import AttendeeClassEnrollment
+from enrollment.models.attendee import AttendeeEnrollment
 from enrollment.models.faction import FactionEnrollment
 from enrollment.models.facility import FacilityEnrollment
 from enrollment.models.facility_class import FacilityClassEnrollment
@@ -32,6 +33,7 @@ from faction.models.attendee import AttendeeProfile
 from faction.models.leader import LeaderProfile
 from enrollment.models.faculty import FacultyEnrollment
 from enrollment.models.faculty_class import FacultyClassEnrollment
+from enrollment.models.leader import LeaderEnrollment
 from course.models.facility_class import FacilityClass
 from enrollment.serializers import (
     AttendeeEnrollmentSerializer,
@@ -153,6 +155,100 @@ class EnrollmentScenarioBase(BaseDomainTestCase):
             organization_enrollment=self.org_enrollment,
             max_enrollment=max_enrollment,
         )
+
+
+class TemporalAndEnrollmentTemplateTests(EnrollmentScenarioBase):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self._create_superuser(username="template.admin"))
+
+    def test_week_detail_uses_shared_detail_sections(self):
+        Period.objects.create(
+            name="Morning",
+            start=time(8, 0),
+            end=time(9, 0),
+            week=self.week,
+        )
+
+        response = self.client.get(
+            reverse("enrollments:week:show", kwargs={"week_slug": self.week.slug})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Week Summary")
+        self.assertContains(response, "Periods")
+        self.assertContains(response, "Timeline")
+        self.assertContains(response, "Add Period")
+
+    def test_period_detail_uses_shared_detail_sections(self):
+        period = Period.objects.create(
+            name="Afternoon",
+            start=time(13, 0),
+            end=time(14, 0),
+            week=self.week,
+        )
+
+        response = self.client.get(
+            reverse(
+                "enrollments:week:periods:show",
+                kwargs={"week_slug": self.week.slug, "period_slug": period.slug},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Period Summary")
+        self.assertContains(response, "Afternoon")
+        self.assertContains(response, "Week")
+
+    def test_enrollment_detail_templates_show_operational_summary(self):
+        faction_enrollment = self._create_faction_enrollment("Eagle Week")
+        attendee = self._create_attendee_profile("enrolled.attendee")
+        leader = self._create_leader_profile("enrolled.leader")
+        AttendeeEnrollment.objects.create(
+            attendee=attendee,
+            faction_enrollment=faction_enrollment,
+            quarters=self.quarters,
+        )
+        LeaderEnrollment.objects.create(
+            leader=leader,
+            faction_enrollment=faction_enrollment,
+            quarters=self.quarters,
+        )
+
+        response = self.client.get(
+            reverse(
+                "factions:enrollments:show",
+                kwargs={
+                    "faction_slug": self.faction.slug,
+                    "enrollment_slug": faction_enrollment.slug,
+                },
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enrollment Summary")
+        self.assertContains(response, "Housing")
+        self.assertContains(response, "Eagle Patrol")
+
+    def test_attendee_enrollment_nested_index_renders_list_template(self):
+        faction_enrollment = self._create_faction_enrollment("Attendee List Week")
+        attendee = self._create_attendee_profile("riley.chen")
+        AttendeeEnrollment.objects.create(
+            attendee=attendee,
+            faction_enrollment=faction_enrollment,
+            quarters=self.quarters,
+        )
+
+        response = self.client.get(
+            reverse(
+                "attendees:enrollments:index",
+                kwargs={"slug": attendee.slug},
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Attendee Enrollments")
+        self.assertContains(response, "Eagle Patrol")
 
 
 class FacultyPermissionTests(EnrollmentScenarioBase):

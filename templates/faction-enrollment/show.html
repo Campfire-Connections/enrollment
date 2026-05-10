@@ -1,41 +1,78 @@
-{% extends 'base/layout.html' %}
+{% extends 'base/show.html' %}
 
-{% block title %}[SCSS] - {{ organization.name }}{% endblock title %}
+{% block title_text %}{{ faction_enrollment.name|default:"Faction Enrollment" }}{% endblock title_text %}
+{% block object_name %}{{ faction_enrollment.faction.name }}{% endblock object_name %}
+{% block object_identifier %}{{ faction_enrollment.week.name }}{% endblock object_identifier %}
+{% block object_details %}
+    {{ faction_enrollment.start|date:"M d, Y" }} - {{ faction_enrollment.end|date:"M d, Y" }}
+{% endblock object_details %}
 
-{% block content %}
-    <div class="container">
-    <h1>{{ organization.name }}</h1>
-      <ul id="organization.name">
-        <li>
-          <span class="field-name">Name:</span>
-          <span class="field-value">{{ organization.name }}</span>
-        </li>
-        <li>
-          <span class="field-name">Abbreviation:</span>
-          <span class="field-value">{{ organization.abbreviation }}</span>
-        </li>
-        <li>
-          <span class="field-name">Description:</span>
-          <span class="field-value">{{ organization.description }}</span>
-        </li>
-        {% if organization.parent is defined and organization.parent %}
-        <li>
-          <span class="field-name">Parent:</span>
-          <span class="field-value">{{ organization.parent.name }}</span>
-        </li>
-        {% endif %}
-        <li>
-          <span class="field-name">Factions:</span>
-          <span class="field-value">{{ organization.factions.count }}</span>
-        </li>
-        <li>
-          <span class="field-name">Facilities:</span>
-          <span class="field-value">{{ organization.facilities.count }}</span>
-        </li>
-        <li>
-          <span class="field-name">Attendees:</span>
-          <span class="field-value">{{ organization.attendees.count }}</span>
-      </ul>
-    <a href="{% url 'organization_index' %}">Back to List</a>
+{% block object_edit_action %}
+{% if can_manage_faction_enrollment_page %}
+<a class="btn btn-outline-primary" href="{% url 'factions:enrollments:edit' faction_slug=faction_enrollment.faction.slug enrollment_slug=faction_enrollment.slug %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_edit_action %}
+
+{% block object_secondary_actions %}
+<a class="btn btn-outline-secondary" href="{% url 'factions:show' faction_slug=faction_enrollment.faction.slug %}">
+    <span class="fas fa-flag" aria-hidden="true"></span>
+    Faction
+</a>
+{% endblock object_secondary_actions %}
+
+{% block object_nav_tabs %}
+    {{ block.super }}
+    <li class="nav-item" role="presentation">
+        <a href="#housingTab" id="tabs_tabHousing" class="nav-link" data-bs-toggle="tab">Housing</a>
+    </li>
+{% endblock object_nav_tabs %}
+
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Enrollment Summary</h2>
+    <div class="profile-stat-grid">
+        <div class="metric-card">
+            <span class="metric-value">{{ faction_enrollment.attendee_enrollments.count }}</span>
+            <span class="metric-label">Attendees</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ faction_enrollment.leader_enrollments.count }}</span>
+            <span class="metric-label">Leaders</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ faction_enrollment.week.name }}</span>
+            <span class="metric-label">Week</span>
+        </div>
     </div>
-{% endblock content %}
+    <dl class="detail-list">
+        <dt>Faction</dt>
+        <dd>{{ faction_enrollment.faction.name }}</dd>
+        <dt>Facility</dt>
+        <dd>{{ faction_enrollment.facility_enrollment.facility.name }}</dd>
+        <dt>Description</dt>
+        <dd>{{ faction_enrollment.description|default:"No description available." }}</dd>
+        <dt>Dates</dt>
+        <dd>{{ faction_enrollment.start|date:"M d, Y" }} - {{ faction_enrollment.end|date:"M d, Y" }}</dd>
+    </dl>
+</div>
+{% endblock card_body_overview %}
+
+{% block card_body_wrapper %}
+    {{ block.super }}
+    <div id="housingTab" class="tab-pane fade">
+        <div class="card-body" id="housingCard">
+            <h2 class="no-border card-title section-title">Housing</h2>
+            <dl class="detail-list">
+                <dt>Quarters</dt>
+                <dd>{{ faction_enrollment.quarters.name }}</dd>
+                <dt>Capacity</dt>
+                <dd>{{ faction_enrollment.quarters.capacity|default:"-" }}</dd>
+                <dt>Occupancy</dt>
+                <dd>{{ faction_enrollment.attendee_enrollments.count|add:faction_enrollment.leader_enrollments.count }}</dd>
+            </dl>
+        </div>
+    </div>
+{% endblock card_body_wrapper %}

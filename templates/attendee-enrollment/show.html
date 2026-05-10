@@ -1,3 +1,45 @@
 {% extends "base/show.html" %}
 
 {% block title_text %}Attendee Enrollment{% endblock title_text %}
+{% block object_name %}{{ attendee_enrollment.attendee }}{% endblock object_name %}
+{% block object_identifier %}{{ attendee_enrollment.faction_enrollment.faction.name }}{% endblock object_identifier %}
+{% block object_details %}
+    {{ attendee_enrollment.start|date:"M d, Y" }} - {{ attendee_enrollment.end|date:"M d, Y" }}
+{% endblock object_details %}
+
+{% block object_secondary_actions %}
+<a class="btn btn-outline-secondary" href="{% url 'factions:attendees:show' faction_slug=attendee_enrollment.faction_enrollment.faction.slug slug=attendee_enrollment.attendee.slug %}">
+    <span class="fas fa-user" aria-hidden="true"></span>
+    Attendee
+</a>
+<a class="btn btn-outline-secondary" href="{% url 'factions:show' faction_slug=attendee_enrollment.faction_enrollment.faction.slug %}">
+    <span class="fas fa-flag" aria-hidden="true"></span>
+    Faction
+</a>
+{% if can_manage_attendee_enrollment_page %}
+<a class="btn btn-outline-primary" href="{% url 'enrollments:attendee:update' slug=attendee_enrollment.slug %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_secondary_actions %}
+
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Enrollment Summary</h2>
+    <dl class="detail-list">
+        <dt>Attendee</dt>
+        <dd>{{ attendee_enrollment.attendee }}</dd>
+        <dt>Faction</dt>
+        <dd>{{ attendee_enrollment.faction_enrollment.faction.name }}</dd>
+        <dt>Week</dt>
+        <dd>{{ attendee_enrollment.faction_enrollment.week.name }}</dd>
+        <dt>Quarters</dt>
+        <dd>{{ attendee_enrollment.quarters.name }}</dd>
+        <dt>Role</dt>
+        <dd>{{ attendee_enrollment.role|default:"-" }}</dd>
+        <dt>Dates</dt>
+        <dd>{{ attendee_enrollment.start|date:"M d, Y" }} - {{ attendee_enrollment.end|date:"M d, Y" }}</dd>
+    </dl>
+</div>
+{% endblock card_body_overview %}

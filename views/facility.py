@@ -13,6 +13,7 @@ from core.views.base import (
     BaseUpdateView,
 )
 from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
+from core.policies import can_manage_facility
 from core.utils import is_faculty_admin, is_department_admin
 
 from facility.models.facility import Facility
@@ -128,6 +129,15 @@ class FacilityEnrollmentShowView(BaseDetailView):
 
     def get_tables_config(self):
         return facility_enrollment_detail_tables_config(self.get_object())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        enrollment = self.get_object()
+        context["can_manage_facility_enrollment_page"] = can_manage_facility(
+            self.request.user,
+            getattr(enrollment, "facility", None),
+        )
+        return context
 
 
 class FacilityEnrollmentCreateView(BaseCreateView):
@@ -274,6 +284,15 @@ class FacultyEnrollmentShowView(BaseDetailView):
     slug_field = "slug"
     slug_url_kwarg = "faculty_enrollment_slug"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        enrollment = self.get_object()
+        context["can_manage_faculty_enrollment_page"] = can_manage_facility(
+            self.request.user,
+            getattr(getattr(enrollment, "facility_enrollment", None), "facility", None),
+        )
+        return context
+
 
 class FacultyEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateView):
     model = FacultyEnrollment
@@ -367,6 +386,21 @@ class FacultyClassEnrollmentShowView(BaseDetailView):
     context_object_name = "faculty class enrollment"
     slug_field = "slug"
     slug_url_kwarg = "faculty_class_enrollment_slug"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        assignment = self.get_object()
+        class_enrollment = getattr(assignment, "facility_class_enrollment", None)
+        facility_enrollment = getattr(
+            getattr(class_enrollment, "facility_class", None),
+            "facility_enrollment",
+            None,
+        )
+        context["can_manage_faculty_class_enrollment_page"] = can_manage_facility(
+            self.request.user,
+            getattr(facility_enrollment, "facility", None),
+        )
+        return context
 
 
 class FacultyClassEnrollmentCreateView(SchedulingServiceFormMixin, BaseCreateView):

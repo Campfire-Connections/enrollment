@@ -1,30 +1,50 @@
-<!--facility/templates/facility/show.html-->
 {% extends "base/show.html" %}
 {% load static %}
 {% load my_filters %}
 
-{% block title_text %}Period Details{% endblock title_text %}
+{% block title_text %}{{ period.name|default:"Period Details" }}{% endblock title_text %}
+{% block object_name %}{{ period.name|default:"Period Details" }}{% endblock object_name %}
+{% block object_identifier %}{% if period.week %}{{ period.week.name }}{% endif %}{% endblock object_identifier %}
+{% block object_details %}
+    {{ period.start|time:"g:i A" }} - {{ period.end|time:"g:i A" }}
+{% endblock object_details %}
 
-{% block cards %}
-<div id="show">
-    {% block object_details %}
-    <!-- Display basic facility information -->
-    <section class="card">
-        <h3>Period Information</h3>
-        <dl class="row">
-            <dt class="col-sm-3">Name:</dt>
-            <dd class="col-sm-9">{{ period.name | title }}</dd>
+{% block object_edit_action %}
+{% if can_manage_period_page %}
+<a class="btn btn-outline-primary" href="{% url 'enrollments:week:periods:edit' week_slug=period.week.slug period_slug=period.slug %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_edit_action %}
 
-            <dt class="col-sm-3">Description:</dt>
-            <dd class="col-sm-9">{{ period.description }}</dd>
+{% block object_secondary_actions %}
+<a class="btn btn-outline-secondary" href="{% url 'enrollments:week:show' week_slug=period.week.slug %}">
+    <span class="fas fa-calendar-week" aria-hidden="true"></span>
+    Week
+</a>
+{% endblock object_secondary_actions %}
 
-            <dt class="col-sm-3">Start:</dt>
-            <dd class="col-sm-9">{{ period.start }}</dd>
-
-            <dt class="col-sm-3">End:</dt>
-            <dd class="col-sm-9">{{ period.end }}</dd>
-        </dl>
-    </section>
-    {% endblock object_details %}
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Period Summary</h2>
+    <div class="profile-stat-grid">
+        <div class="metric-card">
+            <span class="metric-value">{{ period.start|time:"g:i A" }}</span>
+            <span class="metric-label">Start</span>
+        </div>
+        <div class="metric-card">
+            <span class="metric-value">{{ period.end|time:"g:i A" }}</span>
+            <span class="metric-label">End</span>
+        </div>
+    </div>
+    <dl class="detail-list">
+        <dt>Name</dt>
+        <dd>{{ period.name|title }}</dd>
+        <dt>Description</dt>
+        <dd>{{ period.description|default:"No description available." }}</dd>
+        <dt>Week</dt>
+        <dd>{{ period.week.name }}</dd>
+    </dl>
 </div>
-{% endblock cards %}
+{% endblock card_body_overview %}

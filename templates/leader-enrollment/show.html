@@ -1,3 +1,45 @@
 {% extends "base/show.html" %}
 
 {% block title_text %}Leader Enrollment{% endblock title_text %}
+{% block object_name %}{{ leader_enrollment.leader }}{% endblock object_name %}
+{% block object_identifier %}{{ leader_enrollment.faction_enrollment.faction.name }}{% endblock object_identifier %}
+{% block object_details %}
+    {{ leader_enrollment.start|date:"M d, Y" }} - {{ leader_enrollment.end|date:"M d, Y" }}
+{% endblock object_details %}
+
+{% block object_secondary_actions %}
+<a class="btn btn-outline-secondary" href="{% url 'factions:leaders:show' faction_slug=leader_enrollment.faction_enrollment.faction.slug slug=leader_enrollment.leader.slug %}">
+    <span class="fas fa-user-tie" aria-hidden="true"></span>
+    Leader
+</a>
+<a class="btn btn-outline-secondary" href="{% url 'factions:show' faction_slug=leader_enrollment.faction_enrollment.faction.slug %}">
+    <span class="fas fa-flag" aria-hidden="true"></span>
+    Faction
+</a>
+{% if can_manage_leader_enrollment_page %}
+<a class="btn btn-outline-primary" href="{% url 'factions:leaders:enrollments:leader_enrollment_update' faction_slug=leader_enrollment.faction_enrollment.faction.slug slug=leader_enrollment.leader.slug pk=leader_enrollment.pk %}">
+    <span class="fas fa-pen" aria-hidden="true"></span>
+    Edit
+</a>
+{% endif %}
+{% endblock object_secondary_actions %}
+
+{% block card_body_overview %}
+<div class="card-body" id="overviewCard">
+    <h2 class="no-border card-title section-title">Enrollment Summary</h2>
+    <dl class="detail-list">
+        <dt>Leader</dt>
+        <dd>{{ leader_enrollment.leader }}</dd>
+        <dt>Faction</dt>
+        <dd>{{ leader_enrollment.faction_enrollment.faction.name }}</dd>
+        <dt>Week</dt>
+        <dd>{{ leader_enrollment.faction_enrollment.week.name }}</dd>
+        <dt>Quarters</dt>
+        <dd>{{ leader_enrollment.quarters.name }}</dd>
+        <dt>Role</dt>
+        <dd>{{ leader_enrollment.role|default:"-" }}</dd>
+        <dt>Dates</dt>
+        <dd>{{ leader_enrollment.start|date:"M d, Y" }} - {{ leader_enrollment.end|date:"M d, Y" }}</dd>
+    </dl>
+</div>
+{% endblock card_body_overview %}

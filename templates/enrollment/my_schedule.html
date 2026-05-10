@@ -1,13 +1,21 @@
 {% extends 'base/layout.html' %}
 
+{% block title_text %}My Schedule{% endblock title_text %}
+
+{% block page_actions %}
+<button class="btn btn-outline-secondary" type="button" id="printSchedule">
+  <span class="fas fa-print" aria-hidden="true"></span>
+  Print
+</button>
+{% endblock page_actions %}
+
 {% block content %}
-<section class="container py-4">
+<section class="content-card">
   <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
     <div>
       <p class="text-uppercase text-muted small mb-1">Current enrollment</p>
-      <h1 class="mb-0">My Schedule</h1>
+      <h2 class="mb-0">My Schedule</h2>
     </div>
-    <button class="btn btn-outline-secondary" type="button" onclick="window.print()">Print</button>
   </div>
 
   {% if not active_enrollment %}
@@ -82,3 +90,12 @@
   {% endif %}
 </section>
 {% endblock %}
+
+{% block javascripts_local %}
+{{ block.super }}
+<script>
+document.getElementById("printSchedule")?.addEventListener("click", function () {
+  window.print();
+});
+</script>
+{% endblock javascripts_local %}

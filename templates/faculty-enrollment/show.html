@@ -1,0 +1,4 @@
+{% extends "base/show.html" %}
+{% block title_text %}Faculty Enrollment{% endblock title_text %}
+{% block object_name %}{{ object.faculty|default:"Faculty Enrollment" }}{% endblock object_name %}
+{% block object_details %}{{ object.facility_enrollment|default:"" }}{% endblock object_details %}

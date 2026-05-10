@@ -11,6 +11,7 @@ from core.views.base import (
     BaseUpdateView,
 )
 from core.mixins.views import LoginRequiredMixin
+from core.policies import can_manage_faction
 
 from enrollment.tables.leader import LeaderEnrollmentTable
 from enrollment.models.leader import LeaderEnrollment
@@ -38,6 +39,14 @@ class ShowView(BaseDetailView):
     model = LeaderEnrollment
     template_name = "leader-enrollment/show.html"
     context_object_name = "leader_enrollment"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["can_manage_leader_enrollment_page"] = can_manage_faction(
+            self.request.user,
+            getattr(getattr(self.object, "faction_enrollment", None), "faction", None),
+        )
+        return context
 
 
 class CreateView(LoginRequiredMixin, SchedulingServiceFormMixin, BaseCreateView):

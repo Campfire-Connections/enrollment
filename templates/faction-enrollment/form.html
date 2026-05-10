@@ -1,72 +1,13 @@
-<!-- enrollment/templates/faction-enrollment/form.html-->
-{% extends "base/layout.html" %}
+{% extends "base/form.html" %}
 
-{% block content %}
-<section class="container mt-5 card">
-<h2>Enroll {{ faction.name | title }}.</h2>
+{% block form_title %}Enroll {{ faction.name|title }}{% endblock form_title %}
+{% block form_heading %}Enroll {{ faction.name|title }}{% endblock form_heading %}
+{% block submit_label %}Submit Enrollment{% endblock submit_label %}
+{% block cancel_url %}{% url 'factions:show' faction_slug=faction.slug %}{% endblock cancel_url %}
+{% block cancel_url_bottom %}{% url 'factions:show' faction_slug=faction.slug %}{% endblock cancel_url_bottom %}
 
-<form method="POST" class="form-horizontal">
-    {% csrf_token %}
-    <fieldset>
-    <!-- Facility Enrollment -->
-    <div class="form-group">
-        <label for="{{ form.facility_enrollment.id_for_label }}" class="control-label">
-        {{ form.facility_enrollment.label }}
-        </label>
-        <div class="controls">
-        {{ form.facility_enrollment }}
-        </div>
-    </div>
-
-    <!-- Week -->
-    <div class="form-group">
-        <label for="{{ form.week.id_for_label }}" class="control-label">
-        {{ form.week.label }}
-        </label>
-        <div class="controls">
-        {{ form.week }}
-        </div>
-    </div>
-
-    <!-- Quarters -->
-    <div class="form-group">
-        <label for="{{ form.quarters.id_for_label }}" class="control-label">
-        {{ form.quarters.label }}
-        </label>
-        <div class="controls">
-        {{ form.quarters }}
-        </div>
-    </div>
-
-    <!-- Start Date -->
-    <div class="form-group">
-        <label for="{{ form.start_date.id_for_label }}" class="control-label">
-        {{ form.start_date.label }}
-        </label>
-        <div class="controls">
-        {{ form.start_date }}
-        </div>
-    </div>
-
-    <!-- End Date -->
-    <div class="form-group">
-        <label for="{{ form.end_date.id_for_label }}" class="control-label">
-        {{ form.end_date.label }}
-        </label>
-        <div class="controls">
-        {{ form.end_date }}
-        </div>
-    </div>
-
-    </fieldset>
-
-    <div class="form-group">
-    <button type="submit" class="btn btn-primary">Submit Enrollment</button>
-    <a href="{% url 'factions:show' faction.slug %}" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
-</section>
-
+{% block javascripts_local %}
+{{ block.super }}
 <script>
 (function() {
     const weekSelect = document.getElementById("id_week");
@@ -118,4 +59,4 @@
     });
 })();
 </script>
-{% endblock %}
+{% endblock javascripts_local %}

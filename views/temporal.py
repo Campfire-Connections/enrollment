@@ -14,6 +14,7 @@ from core.views.base import (
     build_tables_from_config,
 )
 from core.mixins.views import LoginRequiredMixin, PortalPermissionMixin
+from core.policies import can_manage_facility
 from core.utils import is_faculty_admin
 
 from ..models.temporal import Week, Period
@@ -102,12 +103,17 @@ class WeekShowView(BaseDetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        week = self.get_object()
         context.update(
             build_tables_from_config(
                 self.request,
-                week_detail_tables_config(self.get_object()),
+                week_detail_tables_config(week),
                 default_paginate=None,
             )
+        )
+        context["can_manage_week_page"] = can_manage_facility(
+            self.request.user,
+            getattr(getattr(week, "facility_enrollment", None), "facility", None),
         )
         return context
 
@@ -148,6 +154,19 @@ class PeriodShowView(BaseDetailView):
     context_object_name = "period"
     slug_field = "slug"
     slug_url_kwarg = "period_slug"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        period = self.get_object()
+        context["can_manage_period_page"] = can_manage_facility(
+            self.request.user,
+            getattr(
+                getattr(getattr(period, "week", None), "facility_enrollment", None),
+                "facility",
+                None,
+            ),
+        )
+        return context
 
 
 class PeriodCreateView(BaseCreateView):

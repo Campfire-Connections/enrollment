@@ -11,6 +11,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.shortcuts import get_object_or_404
 from core.mixins.views import LoginRequiredMixin
+from core.policies import can_manage_faction
 
 from faction.models.faction import Faction
 
@@ -24,6 +25,7 @@ from ..forms.attendee import AttendeeClassEnrollmentForm, AttendeeEnrollmentForm
 from ..services import SchedulingService
 from ..mixin import SchedulingServiceFormMixin
 from ..tables.faction import FactionEnrollmentTable
+from ..tables.attendee import AttendeeEnrollmentTable
 from django_tables2 import SingleTableMixin
 
 
@@ -62,6 +64,14 @@ class FactionEnrollmentShowView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         return FactionEnrollment.objects.with_related()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["can_manage_faction_enrollment_page"] = can_manage_faction(
+            self.request.user,
+            getattr(self.object, "faction", None),
+        )
+        return context
 
 
 class FactionEnrollmentCreateView(
@@ -170,26 +180,44 @@ class FactionEnrollmentDeleteView(LoginRequiredMixin, DeleteView):
 
 
 
-class AttendeeEnrollmentIndexView(LoginRequiredMixin, ListView):
+class AttendeeEnrollmentIndexView(LoginRequiredMixin, SingleTableMixin, ListView):
     model = AttendeeEnrollment
-    template_name = "attendee-enrollment/index.html"
+    table_class = AttendeeEnrollmentTable
+    template_name = "attendee-enrollment/list.html"
     context_object_name = "attendee_enrollments"
 
     def get_queryset(self):
-        return AttendeeEnrollment.objects.with_related()
+        qs = AttendeeEnrollment.objects.with_related()
+        attendee_slug = self.kwargs.get("slug")
+        if attendee_slug:
+            qs = qs.filter(attendee__slug=attendee_slug)
+        return qs
 
-class AttendeeEnrollmentIndexByAttendee(LoginRequiredMixin, ListView):
+class AttendeeEnrollmentIndexByAttendee(LoginRequiredMixin, SingleTableMixin, ListView):
     model = AttendeeEnrollment
-    template_name = "attendee-enrollment/index.html"
+    table_class = AttendeeEnrollmentTable
+    template_name = "attendee-enrollment/list.html"
     context_object_name = "attendee_enrollments"
 
     def get_queryset(self):
-        return AttendeeEnrollment.objects.with_related()
+        qs = AttendeeEnrollment.objects.with_related()
+        attendee_slug = self.kwargs.get("slug")
+        if attendee_slug:
+            qs = qs.filter(attendee__slug=attendee_slug)
+        return qs
     
 class AttendeeEnrollmentShowView(LoginRequiredMixin, DetailView):
     model = AttendeeEnrollment
     template_name = "attendee-enrollment/show.html"
     context_object_name = "attendee_enrollment"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["can_manage_attendee_enrollment_page"] = can_manage_faction(
+            self.request.user,
+            getattr(getattr(self.object, "faction_enrollment", None), "faction", None),
+        )
+        return context
 
 
 class AttendeeEnrollmentCreateView(
@@ -230,7 +258,7 @@ class AttendeeEnrollmentDeleteView(LoginRequiredMixin, DeleteView):
 
 class AttendeeClassEnrollmentIndexView(LoginRequiredMixin, ListView):
     model = AttendeeClassEnrollment
-    template_name = "attendee-class-enrollment/index.html"
+    template_name = "attendee-class-enrollment/list.html"
     context_object_name = "attendee_class_enrollments"
 
 
