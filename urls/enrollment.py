@@ -13,45 +13,12 @@ from ..views.enrollment import (
 app_name = "enrollment"
 
 urlpatterns = [
-    path(
-        "enrollments/active/",
-        ActiveEnrollmentIndexView.as_view(),
-        name="active_enrollment_index",
-    ),
-    path(
-        "enrollments/active/create/",
-        ActiveEnrollmentCreateView.as_view(),
-        name="active_enrollment_create",
-    ),
-    path(
-        "enrollments/active/<int:pk>/",
-        ActiveEnrollmentShowView.as_view(),
-        name="active_enrollment_show",
-    ),
-    path(
-        "enrollments/active/<slug:slug>/",
-        ActiveEnrollmentShowView.as_view(),
-        name="active_enrollment_show",
-    ),
-    path(
-        "enrollments/active/<int:pk>/edit/",
-        ActiveEnrollmentUpdateView.as_view(),
-        name="active_enrollment_edit",
-    ),
-    path(
-        "enrollments/active/<slug:slug>/edit/",
-        ActiveEnrollmentUpdateView.as_view(),
-        name="active_enrollment_edit",
-    ),
-    path(
-        "enrollments/active/<int:pk>/delete/",
-        ActiveEnrollmentDeleteView.as_view(),
-        name="active_enrollment_delete",
-    ),
-    path(
-        "enrollments/active/<slug:slug>/delete/",
-        ActiveEnrollmentDeleteView.as_view(),
-        name="active_enrollment_delete",
-    ),
-    path('my-schedule/', MyScheduleView.as_view(), name='my_schedule'),
+    path("", ActiveEnrollmentIndexView.as_view(), name="index"),
+    path("new/", ActiveEnrollmentCreateView.as_view(), name="new"),
+    path("<int:pk>/", ActiveEnrollmentShowView.as_view(), name="show"),
+    path("<slug:slug>/", ActiveEnrollmentShowView.as_view(), name="show"),
+    path("<int:pk>/edit/", ActiveEnrollmentUpdateView.as_view(), name="edit"),
+    path("<slug:slug>/edit/", ActiveEnrollmentUpdateView.as_view(), name="edit"),
+    path("<int:pk>/delete/", ActiveEnrollmentDeleteView.as_view(), name="delete"),
+    path("<slug:slug>/delete/", ActiveEnrollmentDeleteView.as_view(), name="delete"),
 ]

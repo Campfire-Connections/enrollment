@@ -242,7 +242,7 @@ class TemporalAndEnrollmentTemplateTests(EnrollmentScenarioBase):
         response = self.client.get(
             reverse(
                 "attendees:enrollments:index",
-                kwargs={"slug": attendee.slug},
+                kwargs={"attendee_slug": attendee.slug},
             )
         )
 

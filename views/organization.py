@@ -29,20 +29,20 @@ class OrganizationEnrollmentCreateView(BaseCreateView):
     model = OrganizationEnrollment
     fields = ["name", "start", "end", "organization"]
     template_name = "organization_enrollment/form.html"
-    success_url = reverse_lazy("organization_enrollment:index")
+    success_url = reverse_lazy("enrollments:organization:index")
 
 
 class OrganizationEnrollmentUpdateView(BaseUpdateView):
     model = OrganizationEnrollment
     fields = ["name", "start", "end", "organization"]
     template_name = "organization_enrollment/form.html"
-    success_url = reverse_lazy("organization_enrollment:index")
+    success_url = reverse_lazy("enrollments:organization:index")
 
 
 class OrganizationEnrollmentDeleteView(BaseDeleteView):
     model = OrganizationEnrollment
     template_name = "organization_enrollment/confirm_delete.html"
-    success_url = reverse_lazy("organization_enrollment:index")
+    success_url = reverse_lazy("enrollments:organization:index")
 
 
 class OrganizationCourseIndexView(BaseListView):
@@ -61,17 +61,17 @@ class OrganizationCourseCreateView(BaseCreateView):
     model = OrganizationCourse
     fields = ["name", "course", "organization_enrollment"]
     template_name = "organization_course/form.html"
-    success_url = reverse_lazy("organization_course:index")
+    success_url = reverse_lazy("enrollments:organization:course_index")
 
 
 class OrganizationCourseUpdateView(BaseUpdateView):
     model = OrganizationCourse
     fields = ["name", "course", "organization_enrollment"]
     template_name = "organization_course/form.html"
-    success_url = reverse_lazy("organization_course:index")
+    success_url = reverse_lazy("enrollments:organization:course_index")
 
 
 class OrganizationCourseDeleteView(BaseDeleteView):
     model = OrganizationCourse
     template_name = "organization_course/confirm_delete.html"
-    success_url = reverse_lazy("organization_course:index")
+    success_url = reverse_lazy("enrollments:organization:course_index")

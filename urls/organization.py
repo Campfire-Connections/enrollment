@@ -19,86 +19,36 @@ from ..views.organization import (
 app_name = "organization"
 
 urlpatterns = [
-    # Organization Enrollment URLs
+    path("", OrganizationEnrollmentIndexView.as_view(), name="index"),
+    path("new/", OrganizationEnrollmentCreateView.as_view(), name="new"),
+    path("<int:pk>/", OrganizationEnrollmentShowView.as_view(), name="show"),
+    path("<slug:slug>/", OrganizationEnrollmentShowView.as_view(), name="show"),
+    path("<int:pk>/update/", OrganizationEnrollmentUpdateView.as_view(), name="edit"),
+    path("<slug:slug>/update/", OrganizationEnrollmentUpdateView.as_view(), name="edit"),
+    path("<int:pk>/delete/", OrganizationEnrollmentDeleteView.as_view(), name="delete"),
+    path("<slug:slug>/delete/", OrganizationEnrollmentDeleteView.as_view(), name="delete"),
+    path("courses/", OrganizationCourseIndexView.as_view(), name="course_index"),
+    path("courses/new/", OrganizationCourseCreateView.as_view(), name="course_new"),
+    path("courses/<int:pk>/", OrganizationCourseShowView.as_view(), name="course_show"),
+    path("courses/<slug:slug>/", OrganizationCourseShowView.as_view(), name="course_show"),
     path(
-        "enrollments/organizations//",
-        OrganizationEnrollmentIndexView.as_view(),
-        name="organization_enrollment_index",
-    ),
-    path(
-        "enrollments/organizations//create/",
-        OrganizationEnrollmentCreateView.as_view(),
-        name="organization_enrollment_create",
-    ),
-    path(
-        "enrollments/organizations//<int:pk>/",
-        OrganizationEnrollmentShowView.as_view(),
-        name="organization_enrollment_show",
-    ),
-    path(
-        "enrollments/organizations//<slug:slug>/",
-        OrganizationEnrollmentShowView.as_view(),
-        name="organization_enrollment_show",
-    ),
-    path(
-        "enrollments/organizations//<int:pk>/update/",
-        OrganizationEnrollmentUpdateView.as_view(),
-        name="organization_enrollment_update",
-    ),
-    path(
-        "enrollments/organizations//<slug:slug>/update/",
-        OrganizationEnrollmentUpdateView.as_view(),
-        name="organization_enrollment_update",
-    ),
-    path(
-        "enrollments/organizations//<int:pk>/delete/",
-        OrganizationEnrollmentDeleteView.as_view(),
-        name="organization_enrollment_delete",
-    ),
-    path(
-        "enrollments/organizations//<slug:slug>/delete/",
-        OrganizationEnrollmentDeleteView.as_view(),
-        name="organization_enrollment_delete",
-    ),
-    # Organization Course URLs
-    path(
-        "courses/organizations/",
-        OrganizationCourseIndexView.as_view(),
-        name="organization_course_index",
-    ),
-    path(
-        "courses/organizations/create/",
-        OrganizationCourseCreateView.as_view(),
-        name="organization_course_create",
-    ),
-    path(
-        "courses/organizations/<int:pk>/",
-        OrganizationCourseShowView.as_view(),
-        name="organization_course_show",
-    ),
-    path(
-        "courses/organizations/<slug:slug>/",
-        OrganizationCourseShowView.as_view(),
-        name="organization_course_show",
-    ),
-    path(
-        "courses/organizations/<int:pk>/update/",
+        "courses/<int:pk>/update/",
         OrganizationCourseUpdateView.as_view(),
-        name="organization_course_update",
+        name="course_edit",
     ),
     path(
-        "courses/organizations/<slug:slug>/update/",
+        "courses/<slug:slug>/update/",
         OrganizationCourseUpdateView.as_view(),
-        name="organization_course_update",
+        name="course_edit",
     ),
     path(
-        "courses/organizations/<int:pk>/delete/",
+        "courses/<int:pk>/delete/",
         OrganizationCourseDeleteView.as_view(),
-        name="organization_course_delete",
+        name="course_delete",
     ),
     path(
-        "courses/organizations/<slug:slug>/delete/",
+        "courses/<slug:slug>/delete/",
         OrganizationCourseDeleteView.as_view(),
-        name="organization_course_delete",
+        name="course_delete",
     ),
 ]

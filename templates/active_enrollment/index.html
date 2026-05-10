@@ -1,2 +1,53 @@
-{% extends "base/list.html" %}
+{% extends "base/layout.html" %}
 {% block title_text %}Active Enrollments{% endblock title_text %}
+{% block page_actions %}
+<a class="btn btn-primary" href="{% url 'enrollments:active:new' %}">
+    <span class="fas fa-user-check" aria-hidden="true"></span>
+    Set Active Enrollment
+</a>
+{% endblock page_actions %}
+{% block content %}
+<section class="content-card">
+    <div class="section-heading">
+        <div>
+            <h2>Active Enrollment Assignments</h2>
+            <p class="text-muted mb-0">Current user-to-session context used by schedules, dashboards, and role views.</p>
+        </div>
+    </div>
+
+    {% if active_enrollments %}
+        <div class="table-shell">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Attendee</th>
+                        <th>Leader</th>
+                        <th>Faction</th>
+                        <th>Faculty</th>
+                        <th>Facility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in active_enrollments %}
+                        <tr>
+                            <td>{{ enrollment.user.get_full_name|default:enrollment.user.username }}</td>
+                            <td>{{ enrollment.attendee_enrollment|default:"-" }}</td>
+                            <td>{{ enrollment.leader_enrollment|default:"-" }}</td>
+                            <td>{{ enrollment.faction_enrollment|default:"-" }}</td>
+                            <td>{{ enrollment.faculty_enrollment|default:"-" }}</td>
+                            <td>{{ enrollment.facility_enrollment|default:"-" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <span class="fas fa-user-clock" aria-hidden="true"></span>
+            <p>No active enrollment assignments have been set.</p>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'enrollments:active:new' %}">Create Assignment</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock content %}

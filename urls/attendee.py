@@ -3,7 +3,6 @@
 from django.urls import path
 
 from ..views.faction import (
-    AttendeeEnrollmentIndexView,
     AttendeeEnrollmentShowView,
     AttendeeEnrollmentCreateView,
     AttendeeEnrollmentUpdateView,
@@ -17,7 +16,7 @@ urlpatterns = [
     # Attendee Enrollment URLs
     path(
         "",
-        AttendeeEnrollmentIndexView.as_view(),
+        AttendeeEnrollmentIndexByAttendeeView.as_view(),
         name="index",
     ),
     path(

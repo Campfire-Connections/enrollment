@@ -40,7 +40,7 @@ class ActiveEnrollmentCreateView(BaseCreateView):
         "facility_enrollment",
     ]
     template_name = "active_enrollment/form.html"
-    success_url = reverse_lazy("active_enrollment:index")
+    success_url = reverse_lazy("enrollments:active:index")
 
     def form_valid(self, form):
         service = ActiveEnrollmentService(form.cleaned_data["user"])
@@ -65,7 +65,7 @@ class ActiveEnrollmentUpdateView(BaseUpdateView):
         "facility_enrollment",
     ]
     template_name = "active_enrollment/form.html"
-    success_url = reverse_lazy("active_enrollment:index")
+    success_url = reverse_lazy("enrollments:active:index")
 
     def form_valid(self, form):
         service = ActiveEnrollmentService(form.cleaned_data["user"])
@@ -82,7 +82,7 @@ class ActiveEnrollmentUpdateView(BaseUpdateView):
 class ActiveEnrollmentDeleteView(BaseDeleteView):
     model = ActiveEnrollment
     template_name = "active_enrollment/confirm_delete.html"
-    success_url = reverse_lazy("active_enrollment:index")
+    success_url = reverse_lazy("enrollments:active:index")
 
 
 class MyScheduleView(LoginRequiredMixin, BaseTemplateView):

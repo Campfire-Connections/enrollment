@@ -1,2 +1,35 @@
 {% extends "base/manage.html" %}
 {% block title_text %}Manage Facility Classes{% endblock title_text %}
+{% block manage_header %}
+<div class="section-heading">
+    <div>
+        <h2>Facility Class Operations</h2>
+        <p class="text-muted mb-0">Review class capacity, department ownership, and scheduled periods for this facility enrollment.</p>
+    </div>
+</div>
+{% endblock manage_header %}
+{% block cards %}
+{% if tables %}
+    {% for table_config in tables %}
+        <section class="content-card">
+            <div class="section-heading">
+                <h3>{{ table_config.title|default:"Class Table" }}</h3>
+                {% if table_config.create_url %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ table_config.create_url }}">
+                        <span class="fas fa-plus-square" aria-hidden="true"></span>
+                        Add
+                    </a>
+                {% endif %}
+            </div>
+            {% include "partials/table.html" with table=table_config.table %}
+        </section>
+    {% endfor %}
+{% else %}
+    <section class="content-card">
+        <div class="empty-state">
+            <span class="fas fa-chalkboard" aria-hidden="true"></span>
+            <p>No facility class tables are available for this context.</p>
+        </div>
+    </section>
+{% endif %}
+{% endblock cards %}

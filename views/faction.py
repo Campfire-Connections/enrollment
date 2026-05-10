@@ -194,6 +194,8 @@ class AttendeeEnrollmentIndexView(LoginRequiredMixin, SingleTableMixin, ListView
         return qs
 
 class AttendeeEnrollmentIndexByAttendee(LoginRequiredMixin, SingleTableMixin, ListView):
+    """Deprecated duplicate; use enrollment.views.attendee.AttendeeEnrollmentIndexByAttendeeView."""
+
     model = AttendeeEnrollment
     table_class = AttendeeEnrollmentTable
     template_name = "attendee-enrollment/list.html"

@@ -128,3 +128,7 @@ class LeaderEnrollmentViewSet(BaseModelViewSet):
 
 
 LeaderEnrollmenyViewSet = LeaderEnrollmentViewSet
+LeaderEnrollmenyViewSet.__doc__ = (
+    "Deprecated misspelled alias retained for historical imports. "
+    "Use LeaderEnrollmentViewSet instead."
+)

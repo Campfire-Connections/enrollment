@@ -21,86 +21,48 @@ from ..views.facility import (
 app_name = "faculty"
 
 urlpatterns = [
-    # Faculty Enrollment URLs
+    path("", FacultyEnrollmentIndexView.as_view(), name="index"),
+    path("new/", FacultyEnrollmentCreateView.as_view(), name="new"),
+    path("<int:pk>/", FacultyEnrollmentShowView.as_view(), name="show"),
+    path("<slug:faculty_enrollment_slug>/", FacultyEnrollmentShowView.as_view(), name="show"),
+    path("<int:pk>/update/", FacultyEnrollmentUpdateView.as_view(), name="edit"),
     path(
-        "enrollments/faculty/",
-        FacultyEnrollmentIndexView.as_view(),
-        name="index",
-    ),
-    path(
-        "enrollments/faculty/create/",
-        FacultyEnrollmentCreateView.as_view(),
-        name="new",
-    ),
-    path(
-        "enrollments/faculty/<int:pk>/",
-        FacultyEnrollmentShowView.as_view(),
-        name="show",
-    ),
-    path(
-        "enrollments/faculty/<slug:slug>/",
-        FacultyEnrollmentShowView.as_view(),
-        name="show",
-    ),
-    path(
-        "enrollments/faculty/<int:pk>/update/",
+        "<slug:faculty_enrollment_slug>/update/",
         FacultyEnrollmentUpdateView.as_view(),
-        name="update",
+        name="edit",
     ),
+    path("<int:pk>/delete/", FacultyEnrollmentDeleteView.as_view(), name="delete"),
     path(
-        "enrollments/faculty/<slug:slug>/update/",
-        FacultyEnrollmentUpdateView.as_view(),
-        name="update",
-    ),
-    path(
-        "enrollments/faculty/<int:pk>/delete/",
+        "<slug:faculty_enrollment_slug>/delete/",
         FacultyEnrollmentDeleteView.as_view(),
         name="delete",
     ),
+    path("classes/", FacultyClassEnrollmentIndexView.as_view(), name="class_index"),
+    path("classes/new/", FacultyClassEnrollmentCreateView.as_view(), name="class_new"),
+    path("classes/<int:pk>/", FacultyClassEnrollmentShowView.as_view(), name="class_show"),
     path(
-        "enrollments/faculty/<slug:slug>/delete/",
-        FacultyEnrollmentDeleteView.as_view(),
-        name="delete",
-    ),
-    # Faculty Class Enrollment URLs
-    path(
-        "enrollments/classes/faculty/",
-        FacultyClassEnrollmentIndexView.as_view(),
-        name="faculty_class_enrollment_index",
-    ),
-    path(
-        "enrollments/classes/faculty/create/",
-        FacultyClassEnrollmentCreateView.as_view(),
-        name="faculty_class_enrollment_create",
-    ),
-    path(
-        "enrollments/classes/faculty/<int:pk>/",
+        "classes/<slug:faculty_class_enrollment_slug>/",
         FacultyClassEnrollmentShowView.as_view(),
-        name="faculty_class_enrollment_show",
+        name="class_show",
     ),
     path(
-        "enrollments/classes/faculty/<slug:slug>/",
-        FacultyClassEnrollmentShowView.as_view(),
-        name="faculty_class_enrollment_show",
-    ),
-    path(
-        "enrollments/classes/faculty/<int:pk>/edit/",
+        "classes/<int:pk>/update/",
         FacultyClassEnrollmentUpdateView.as_view(),
-        name="faculty_class_enrollment_edit",
+        name="class_edit",
     ),
     path(
-        "enrollments/classes/faculty/<slug:slug>/edit/",
+        "classes/<slug:faculty_class_enrollment_slug>/update/",
         FacultyClassEnrollmentUpdateView.as_view(),
-        name="faculty_class_enrollment_edit",
+        name="class_edit",
     ),
     path(
-        "enrollments/classes/faculty/<int:pk>/delete/",
+        "classes/<int:pk>/delete/",
         FacultyClassEnrollmentDeleteView.as_view(),
-        name="faculty_class_enrollment_delete",
+        name="class_delete",
     ),
     path(
-        "enrollments/classes/faculty/<slug:slug>/delete/",
+        "classes/<slug:faculty_class_enrollment_slug>/delete/",
         FacultyClassEnrollmentDeleteView.as_view(),
-        name="faculty_class_enrollment_delete",
+        name="class_delete",
     ),
 ]

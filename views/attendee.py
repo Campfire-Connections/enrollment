@@ -18,10 +18,12 @@ class AttendeeEnrollmentIndexByAttendeeView(BaseTableListView):
     context_object_name = "attendee_enrollments"
 
     def get_queryset(self):
-        return attendee_enrollments_for_attendee_slug(self.kwargs.get("slug"))
+        return attendee_enrollments_for_attendee_slug(
+            self.kwargs.get("attendee_slug") or self.kwargs.get("slug")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        attendee_slug = self.kwargs.get("slug")
+        attendee_slug = self.kwargs.get("attendee_slug") or self.kwargs.get("slug")
         context["attendee"] = get_attendee_by_slug(attendee_slug)
         return context
