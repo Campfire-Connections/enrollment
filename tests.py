@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework import status
@@ -54,6 +55,33 @@ class OrganizationEnrollmentTests(BaseDomainTestCase):
     def test_get_courses_returns_related_instances(self):
         courses = self.org_enrollment.get_courses()
         self.assertIn(self.org_course, courses)
+
+
+class EnrollmentRouteNamingTests(TestCase):
+    def test_profile_scoped_attendee_route_uses_attendee_slug(self):
+        url = reverse(
+            "enrollments:attendee:index",
+            kwargs={"attendee_slug": "sample-attendee"},
+        )
+
+        self.assertEqual(url, "/enrollments/attendees/sample-attendee/")
+
+    def test_profile_scoped_leader_route_uses_leader_slug(self):
+        url = reverse(
+            "enrollments:leader:index",
+            kwargs={"leader_slug": "sample-leader"},
+        )
+
+        self.assertEqual(url, "/enrollments/leaders/sample-leader/")
+
+    def test_legacy_unscoped_profile_enrollment_routes_redirect(self):
+        attendee_response = self.client.get("/enrollments/attendees/")
+        leader_response = self.client.get("/enrollments/leaders/")
+
+        self.assertEqual(attendee_response.status_code, 302)
+        self.assertEqual(leader_response.status_code, 302)
+        self.assertEqual(attendee_response.headers["Location"], reverse("resources"))
+        self.assertEqual(leader_response.headers["Location"], reverse("resources"))
 
 
 class EnrollmentScenarioBase(BaseDomainTestCase):

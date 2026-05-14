@@ -1,6 +1,7 @@
 # enrollment/urls/__init__.py
 
 from django.urls import path, include
+from django.views.generic import RedirectView
 from ..views.temporal import load_weeks, load_quarters
 from enrollment.views.availability import AvailabilityDashboardView, AvailabilityHoldView
 from enrollment.views.enrollment import MyScheduleView
@@ -29,9 +30,22 @@ urlpatterns = [
     path(
         "enrollments/faculty/", include("enrollment.urls.faculty", namespace="faculty")
     ),
-    path("enrollments/leaders/", include("enrollment.urls.leader", namespace="leader")),
+    path(
+        "enrollments/leaders/",
+        RedirectView.as_view(pattern_name="resources", permanent=False),
+        name="legacy_leader_enrollments",
+    ),
+    path(
+        "enrollments/leaders/<slug:leader_slug>/",
+        include("enrollment.urls.leader", namespace="leader"),
+    ),
     path(
         "enrollments/attendees/",
+        RedirectView.as_view(pattern_name="resources", permanent=False),
+        name="legacy_attendee_enrollments",
+    ),
+    path(
+        "enrollments/attendees/<slug:attendee_slug>/",
         include("enrollment.urls.attendee", namespace="attendee"),
     ),
     path(
